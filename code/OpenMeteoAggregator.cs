@@ -33,7 +33,7 @@ public class OpenMeteoAggregator
 
         _client = new HttpClient(handler)
         {
-            Timeout = TimeSpan.FromSeconds(20)
+            Timeout = TimeSpan.FromMinutes(2)
         };
 
         _client.DefaultRequestHeaders.UserAgent.ParseAdd(
