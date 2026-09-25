@@ -73,7 +73,8 @@ public class OpenMeteoAggregator
                 list.Add((lat, lon));
             }
 
-        return list;
+        //return list;
+        return list.Take(1).ToList(); // Teste weniger Punkte
     }
 
     // ------------------------------------------------------------
