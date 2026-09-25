@@ -1,5 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using OxyPlot;
+﻿using OxyPlot;
 using OxyPlot.Annotations;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
@@ -9,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 public class TempDiagramService
 {
@@ -19,49 +19,72 @@ public class TempDiagramService
         _run = run;
     }
 
-    private double? Load00zTempFromDb(string model, DateTime today)
+    public class Temp00zData
+    {
+        public string Date { get; set; } = "";
+        public double? MOSMIX { get; set; }
+        public double? ICON { get; set; }
+        public double? GFS { get; set; }
+        public double? IFS { get; set; }
+        public double? AIFS { get; set; }
+        public double? UKMO { get; set; }
+        public double? GEM { get; set; }
+    }
+
+    private double? Load00zTempFromJson(string model, DateTime today)
     {
         if (_run == "00z")
             return null;
 
-        string connStr =
-            "Data Source=localhost;Initial Catalog=dwd_daten;User ID=sa;Password=phoenix;Encrypt=False;TrustServerCertificate=True;";
+        const string fileName = "00z_prognose_temp.json";
 
-        using var conn = new SqlConnection(connStr);
-        conn.Open();
-
-        string sql =
-            @"SELECT TOP 1 TmkPrognose
-              FROM modellprognosen
-              WHERE Datum = @d
-                AND Modell = @m
-                AND VorhersageTag = 0
-                AND ErzeugtAm > DATEADD(hour, 10, CAST(@d AS datetime))
-              ORDER BY ErzeugtAm ASC";
-
-        using var cmd = new SqlCommand(sql, conn);
-        cmd.Parameters.AddWithValue("@d", today);
-        cmd.Parameters.AddWithValue("@m", model + "00");
-
-        var result = cmd.ExecuteScalar();
-        if (result == null || result == DBNull.Value)
+        if (!File.Exists(fileName))
             return null;
 
-        return Convert.ToDouble(result);
+        try
+        {
+            var data = JsonSerializer.Deserialize<Temp00zData>(
+            File.ReadAllText(fileName));
+
+            if (data == null)
+                return null;
+
+            if (!DateTime.TryParse(data.Date, out var fileDate))
+                return null;
+
+            if (fileDate.Date != today.Date)
+                return null;
+
+            return model switch
+            {
+                "MOSMIX" => data.MOSMIX,
+                "ICON" => data.ICON,
+                "GFS" => data.GFS,
+                "IFS" => data.IFS,
+                "AIFS" => data.AIFS,
+                "UKMO" => data.UKMO,
+                "GEM" => data.GEM,
+                _ => null
+            };
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public string CreateTempDiagram(MosmixData mos, OpenMeteoData om, DateTime today)
     {
-        double? dbValue = Load00zTempFromDb("MOSMIX", today);
+        double? dbValue = Load00zTempFromJson("MOSMIX", today);
         if (dbValue.HasValue)
             mos.DailyTempMean[today] = dbValue.Value;
 
-        double? icon00 = Load00zTempFromDb("ICON", today);
-        double? gfs00 = Load00zTempFromDb("GFS", today);
-        double? ifs00 = Load00zTempFromDb("IFS", today);
-        double? aifs00 = Load00zTempFromDb("AIFS", today);
-        double? ukmo00 = Load00zTempFromDb("UKMO", today);
-        double? gem00 = Load00zTempFromDb("GEM", today);
+        double? icon00 = Load00zTempFromJson("ICON", today);
+        double? gfs00 = Load00zTempFromJson("GFS", today);
+        double? ifs00 = Load00zTempFromJson("IFS", today);
+        double? aifs00 = Load00zTempFromJson("AIFS", today);
+        double? ukmo00 = Load00zTempFromJson("UKMO", today);
+        double? gem00 = Load00zTempFromJson("GEM", today);
 
         if (icon00.HasValue) om.Temp["ICON"][today] = (icon00.Value, 1);
         if (gfs00.HasValue) om.Temp["GFS"][today] = (gfs00.Value, 1);
@@ -321,10 +344,10 @@ public class TempDiagramService
         var uploader = new GitHubUploader("jonas-weather-data", "weather_forecasts");
         string dateFolder = today.ToString("yyyy-MM-dd");
 
-        uploader.UploadLatestAsync(localPath, "temperatur_monat.png").GetAwaiter().GetResult();
-        uploader.UploadRunLatestAsync(_run, localPath, "temperatur_monat.png").GetAwaiter().GetResult();
+        uploader.UploadLatestAsync(localPath, "temperatur_monat_test.png").GetAwaiter().GetResult();
+        uploader.UploadRunLatestAsync(_run, localPath, "temperatur_monat_test.png").GetAwaiter().GetResult();
 
-        string link = uploader.UploadRunDayAsync(_run, dateFolder, localPath, "temperatur_monat.png")
+        string link = uploader.UploadRunDayAsync(_run, dateFolder, localPath, "temperatur_monat_test.png")
             .GetAwaiter()
             .GetResult();
 

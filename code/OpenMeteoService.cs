@@ -11,7 +11,7 @@ public class OpenMeteoService
     private readonly HttpClient _client;
     private readonly Dictionary<string, string> _modelIds;
 
-    // ⭐ Repository einbauen
+    // Repository einbauen
     private readonly ForecastRepository _forecastRepo = new ForecastRepository();
 
     public OpenMeteoService(HttpClient client, Dictionary<string, string> modelIds)
@@ -21,7 +21,7 @@ public class OpenMeteoService
     }
 
     // ============================================================
-    // 0) HTTP GET mit Retry
+    // HTTP GET mit Retry
     // ============================================================
     private async Task<string> SafeGetStringAsync(string url)
     {
@@ -68,43 +68,6 @@ public class OpenMeteoService
         return DateTime.Parse(timeArr[0].GetString()!, CultureInfo.InvariantCulture);
     }
 
-    // ============================================================
-    // 2) Modelllauf bestimmen
-    // ============================================================
-    public string DetectModelRun(
-        Dictionary<DateTime, (double value, int count)> daily,
-        string modelName,
-        DateTime firstUtc)
-    {
-        if (daily == null || daily.Count == 0)
-            return $"{modelName}: keine Daten";
-
-        int hour = firstUtc.Hour;
-
-        int runHour = hour switch
-        {
-            >= 0 and < 6 => 0,
-            >= 6 and < 12 => 6,
-            >= 12 and < 18 => 12,
-            _ => 18
-        };
-
-        DateTime runTime = new DateTime(
-            firstUtc.Year,
-            firstUtc.Month,
-            firstUtc.Day,
-            runHour,
-            0,
-            0,
-            DateTimeKind.Utc
-        );
-
-        return $"{modelName}: Modelllauf {runTime:dd.MM.yyyy HH:mm} UTC";
-    }
-
-    // ============================================================
-    // 3) Open-Meteo Daten laden (ICON/GFS/IFS/AIFS/UKMO/GEM)
-    // ============================================================
     public async Task<OpenMeteoData> LoadOpenMeteoData(DateTime today)
     {
         int year = today.Year;
@@ -141,71 +104,63 @@ public class OpenMeteoService
             GemFirstUtc = gemFirstUtc
         };
 
-        // ⭐ HIER: Prognosen in DB speichern
-        SaveForecastsToDatabase(data, today);
+        // HIER: Prognosen speichern
+        Save00zForecastsToJson(data, today);
 
         return data;
     }
 
     // ============================================================
-    // ⭐ 3b) Prognosen in DB speichern
+    // ⭐ Prognosen in JSON speichern
     // ============================================================
-    private void SaveForecastsToDatabase(OpenMeteoData data, DateTime today)
+    private void Save00zForecastsToJson(OpenMeteoData data, DateTime today)
     {
+        // Nur beim 00z-Lauf speichern
+        if (DateTime.UtcNow.Hour >= 12)
+            return;
+
         foreach (var model in data.Temp.Keys)
         {
             foreach (var kv in data.Temp[model])
             {
                 var date = kv.Key;
+
+                int vorhersageTag = (date - today.Date).Days;
+
+                // Nur Tag 0 speichern
+                if (vorhersageTag != 0)
+                    continue;
+
                 var (tempSum, tempCount) = kv.Value;
 
-                decimal? tmk = tempCount > 0 ? (decimal?)(tempSum / tempCount) : null;
-
-                decimal? sdk = null;
-                if (data.Rain.ContainsKey(model) &&
-                    data.Rain[model].TryGetValue(date, out var sun) &&
-                    sun.count > 0)
-                {
-                    sdk = (decimal?)(sun.rain / sun.count);
-                }
+                decimal? tmk =
+                tempCount > 0
+                ? (decimal?)(tempSum / tempCount)
+                : null;
 
                 decimal? rsk = null;
+
                 if (data.Rain.ContainsKey(model) &&
-                    data.Rain[model].TryGetValue(date, out var rain) &&
-                    rain.count > 0)
+                data.Rain[model].TryGetValue(date, out var rain) &&
+                rain.count > 0)
                 {
                     rsk = (decimal?)(rain.rain / rain.count);
                 }
 
-                int vorhersageTag = (date - today.Date).Days;
-
                 _forecastRepo.InsertForecast(
-                    date,
-                    model,
-                    vorhersageTag,
-                    tmk,
-                    sdk,
-                    rsk
+                date,
+                model,
+                vorhersageTag,
+                tmk,
+                null,
+                rsk
                 );
             }
         }
     }
 
     // ============================================================
-    // 4) Modellläufe ausgeben
-    // ============================================================
-    public void PrintModelRuns(OpenMeteoData data)
-    {
-        Console.WriteLine(DetectModelRun(data.Temp["ICON"], "ICON", data.IconFirstUtc));
-        Console.WriteLine(DetectModelRun(data.Temp["GFS"], "GFS", data.GfsFirstUtc));
-        Console.WriteLine(DetectModelRun(data.Temp["IFS"], "IFS", data.IfsFirstUtc));
-        Console.WriteLine(DetectModelRun(data.Temp["AIFS"], "AIFS", data.AifsFirstUtc));
-        Console.WriteLine(DetectModelRun(data.Temp["UKMO"], "UKMO", data.UkmoFirstUtc));
-        Console.WriteLine(DetectModelRun(data.Temp["GEM"], "GEM", data.GemFirstUtc));
-    }
-
-    // ============================================================
-    // 5) Temperatur-Hilfsfunktion
+    // Temperatur-Hilfsfunktion
     // ============================================================
     public (List<int> days, List<double> cumMeans, Dictionary<int, double> dayMeans)
     BuildTempSeries(

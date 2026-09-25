@@ -1,5 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using OxyPlot;
+﻿using OxyPlot;
 using OxyPlot.Annotations;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
@@ -9,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 public class SunDiagramService
 {
@@ -19,40 +19,47 @@ public class SunDiagramService
         _run = run;
     }
 
-    private double? Load00zSunshineFromDb(string model, DateTime today)
+    public class Sunshine00zData
+    {
+        public string Date { get; set; } = "";
+        public double? MOSMIX { get; set; }
+    }
+
+    private double? Load00zSunshineFromJson(DateTime today)
     {
         if (_run == "00z")
             return null;
 
-        string connStr =
-            "Data Source=localhost;Initial Catalog=dwd_daten;User ID=sa;Password=phoenix;Encrypt=False;TrustServerCertificate=True;";
+        const string fileName = "00z_prognose_sun.json";
 
-        using var conn = new SqlConnection(connStr);
-        conn.Open();
-
-        string sql =
-            @"SELECT TOP 1 SdkPrognose
-              FROM modellprognosen
-              WHERE Datum = @d
-                AND Modell = @m
-                AND VorhersageTag = 0
-                AND ErzeugtAm > DATEADD(hour, 10, CAST(@d AS datetime))
-              ORDER BY ErzeugtAm ASC";
-
-        using var cmd = new SqlCommand(sql, conn);
-        cmd.Parameters.AddWithValue("@d", today);
-        cmd.Parameters.AddWithValue("@m", model + "00");
-
-        var result = cmd.ExecuteScalar();
-        if (result == null || result == DBNull.Value)
+        if (!File.Exists(fileName))
             return null;
 
-        return Convert.ToDouble(result);
+        try
+        {
+            var data = JsonSerializer.Deserialize<Sunshine00zData>(
+            File.ReadAllText(fileName));
+
+            if (data == null)
+                return null;
+
+            if (!DateTime.TryParse(data.Date, out var fileDate))
+                return null;
+
+            if (fileDate.Date != today.Date)
+                return null;
+
+            return data.MOSMIX;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public string CreateSunDiagram(MosmixData mos, DateTime today)
     {
-        double? dbValue = Load00zSunshineFromDb("MOSMIX", today);
+        double? dbValue = Load00zSunshineFromJson(today);
         if (dbValue.HasValue)
             mos.DailySunMean[today] = dbValue.Value;
 
@@ -258,10 +265,10 @@ public class SunDiagramService
         var uploader = new GitHubUploader("jonas-weather-data", "weather_forecasts");
         string dateFolder = today.ToString("yyyy-MM-dd");
 
-        uploader.UploadLatestAsync(localPath, "sonne_monat.png").GetAwaiter().GetResult();
-        uploader.UploadRunLatestAsync(_run, localPath, "sonne_monat.png").GetAwaiter().GetResult();
+        uploader.UploadLatestAsync(localPath, "sonne_monat_test.png").GetAwaiter().GetResult();
+        uploader.UploadRunLatestAsync(_run, localPath, "sonne_monat_test.png").GetAwaiter().GetResult();
 
-        string link = uploader.UploadRunDayAsync(_run, dateFolder, localPath, "sonne_monat.png")
+        string link = uploader.UploadRunDayAsync(_run, dateFolder, localPath, "sonne_monat_test.png")
             .GetAwaiter()
             .GetResult();
 

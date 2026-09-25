@@ -1,5 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using OxyPlot;
+﻿using OxyPlot;
 using OxyPlot.Annotations;
 using OxyPlot.Axes;
 using OxyPlot.Legends;
@@ -9,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 public class RainDiagramService
 {
@@ -19,49 +19,72 @@ public class RainDiagramService
         _run = run;
     }
 
-    private double? Load00zRainFromDb(string model, DateTime today)
+    public class Rain00zData
+    {
+        public string Date { get; set; } = "";
+        public double? MOSMIX { get; set; }
+        public double? ICON { get; set; }
+        public double? GFS { get; set; }
+        public double? IFS { get; set; }
+        public double? AIFS { get; set; }
+        public double? UKMO { get; set; }
+        public double? GEM { get; set; }
+    }
+
+    private double? Load00zRainFromJson(string model, DateTime today)
     {
         if (_run == "00z")
             return null;
 
-        string connStr =
-            "Data Source=localhost;Initial Catalog=dwd_daten;User ID=sa;Password=phoenix;Encrypt=False;TrustServerCertificate=True;";
+        const string fileName = "00z_prognose_rain.json";
 
-        using var conn = new SqlConnection(connStr);
-        conn.Open();
-
-        string sql =
-            @"SELECT TOP 1 RskPrognose
-              FROM modellprognosen
-              WHERE Datum = @d
-                AND Modell = @m
-                AND VorhersageTag = 0
-                AND ErzeugtAm > DATEADD(hour, 10, CAST(@d AS datetime))
-              ORDER BY ErzeugtAm ASC";
-
-        using var cmd = new SqlCommand(sql, conn);
-        cmd.Parameters.AddWithValue("@d", today);
-        cmd.Parameters.AddWithValue("@m", model + "00");
-
-        var result = cmd.ExecuteScalar();
-        if (result == null || result == DBNull.Value)
+        if (!File.Exists(fileName))
             return null;
 
-        return Convert.ToDouble(result);
+        try
+        {
+            var data = JsonSerializer.Deserialize<Rain00zData>(
+            File.ReadAllText(fileName));
+
+            if (data == null)
+                return null;
+
+            if (!DateTime.TryParse(data.Date, out var fileDate))
+                return null;
+
+            if (fileDate.Date != today.Date)
+                return null;
+
+            return model switch
+            {
+                "MOSMIX" => data.MOSMIX,
+                "ICON" => data.ICON,
+                "GFS" => data.GFS,
+                "IFS" => data.IFS,
+                "AIFS" => data.AIFS,
+                "UKMO" => data.UKMO,
+                "GEM" => data.GEM,
+                _ => null
+            };
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public string CreateRainDiagram(MosmixData mos, OpenMeteoData om, DateTime today)
     {
-        double? dbValue = Load00zRainFromDb("MOSMIX", today);
+        double? dbValue = Load00zRainFromJson("MOSMIX", today);
         if (dbValue.HasValue)
             mos.DailyRainMean[today] = dbValue.Value;
 
-        double? icon00 = Load00zRainFromDb("ICON", today);
-        double? gfs00 = Load00zRainFromDb("GFS", today);
-        double? ifs00 = Load00zRainFromDb("IFS", today);
-        double? aifs00 = Load00zRainFromDb("AIFS", today);
-        double? ukmo00 = Load00zRainFromDb("UKMO", today);
-        double? gem00 = Load00zRainFromDb("GEM", today);
+        double? icon00 = Load00zRainFromJson("ICON", today);
+        double? gfs00 = Load00zRainFromJson("GFS", today);
+        double? ifs00 = Load00zRainFromJson("IFS", today);
+        double? aifs00 = Load00zRainFromJson("AIFS", today);
+        double? ukmo00 = Load00zRainFromJson("UKMO", today);
+        double? gem00 = Load00zRainFromJson("GEM", today);
 
         if (icon00.HasValue) om.Rain["ICON"][today] = (icon00.Value, 1);
         if (gfs00.HasValue) om.Rain["GFS"][today] = (gfs00.Value, 1);
@@ -340,10 +363,10 @@ public class RainDiagramService
         var uploader = new GitHubUploader("jonas-weather-data", "weather_forecasts");
         string dateFolder = today.ToString("yyyy-MM-dd");
 
-        uploader.UploadLatestAsync(localPath, "regen_monat.png").GetAwaiter().GetResult();
-        uploader.UploadRunLatestAsync(_run, localPath, "regen_monat.png").GetAwaiter().GetResult();
+        uploader.UploadLatestAsync(localPath, "regen_monat_test.png").GetAwaiter().GetResult();
+        uploader.UploadRunLatestAsync(_run, localPath, "regen_monat_test.png").GetAwaiter().GetResult();
 
-        string link = uploader.UploadRunDayAsync(_run, dateFolder, localPath, "regen_monat.png")
+        string link = uploader.UploadRunDayAsync(_run, dateFolder, localPath, "regen_monat_test.png")
             .GetAwaiter()
             .GetResult();
 

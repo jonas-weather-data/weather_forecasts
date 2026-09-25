@@ -1,37 +1,54 @@
-﻿using System;
-using System.Data;
-using Microsoft.Data.SqlClient;
+﻿using System.Text.Json;
 
 public class ForecastRepository
 {
-    private readonly string _connectionString =
-        "Data Source=localhost;Initial Catalog=dwd_daten;User ID=sa;Password=phoenix;Encrypt=False;TrustServerCertificate=True;";
-
     public void InsertForecast(
-        DateTime datum,
-        string modell,
-        int vorhersageTag,
-        decimal? tmkPrognose,
-        decimal? sdkPrognose,
-        decimal? rskPrognose)
+    DateTime datum,
+    string modell,
+    int vorhersageTag,
+    decimal? tmkPrognose,
+    decimal? sdkPrognose,
+    decimal? rskPrognose)
     {
-        using var conn = new SqlConnection(_connectionString);
-        using var cmd = new SqlCommand(@"
-            INSERT INTO modellprognosen
-                (Datum, Modell, VorhersageTag, TmkPrognose, SdkPrognose, RskPrognose)
-            VALUES
-                (@Datum, @Modell, @VorhersageTag, @Tmk, @Sdk, @Rsk);
-        ", conn);
+        string key = $"{datum:yyyy-MM-dd}_{modell}_{vorhersageTag}";
 
-        cmd.Parameters.Add("@Datum", SqlDbType.Date).Value = datum;
-        cmd.Parameters.Add("@Modell", SqlDbType.NVarChar, 20).Value = modell;
-        cmd.Parameters.Add("@VorhersageTag", SqlDbType.Int).Value = vorhersageTag;
+        if (tmkPrognose.HasValue)
+            SaveValue("00z_prognose_temp.json", key, tmkPrognose.Value);
 
-        cmd.Parameters.Add("@Tmk", SqlDbType.Decimal).Value = (object?)tmkPrognose ?? DBNull.Value;
-        cmd.Parameters.Add("@Sdk", SqlDbType.Decimal).Value = (object?)sdkPrognose ?? DBNull.Value;
-        cmd.Parameters.Add("@Rsk", SqlDbType.Decimal).Value = (object?)rskPrognose ?? DBNull.Value;
+        if (sdkPrognose.HasValue)
+            SaveValue("00z_prognose_sun.json", key, sdkPrognose.Value);
 
-        conn.Open();
-        cmd.ExecuteNonQuery();
+        if (rskPrognose.HasValue)
+            SaveValue("00z_prognose_rain.json", key, rskPrognose.Value);
+    }
+
+    private static void SaveValue(
+    string fileName,
+    string key,
+    decimal value)
+    {
+        Dictionary<string, decimal> data;
+
+        if (File.Exists(fileName))
+        {
+            data = JsonSerializer.Deserialize<Dictionary<string, decimal>>(
+            File.ReadAllText(fileName))
+            ?? new Dictionary<string, decimal>();
+        }
+        else
+        {
+            data = new Dictionary<string, decimal>();
+        }
+
+        data[key] = value;
+
+        File.WriteAllText(
+        fileName,
+        JsonSerializer.Serialize(
+        data,
+        new JsonSerializerOptions
+        {
+            WriteIndented = true
+        }));
     }
 }

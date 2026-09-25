@@ -1,5 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -64,9 +63,6 @@ public class MosmixParser
         {
             ZipFile.ExtractToDirectory(kmzPath, tempDir);
             string kmlPath = Directory.GetFiles(tempDir, "*.kml", SearchOption.AllDirectories).First();
-
-            DateTime? mosmixRun = ExtractMosmixRunTime(kmlPath);
-            Console.WriteLine($"MOSMIX Lauf: {mosmixRun:yyyy-MM-dd HH:mm} UTC");
 
             XDocument doc = XDocument.Load(kmlPath);
 
@@ -189,27 +185,25 @@ public class MosmixParser
 
     public static IEnumerable<StationData> FilterGermany(List<StationData> stations)
     {
-        using var conn = new SqlConnection(
-            "Data Source=localhost;Initial Catalog=dwd_daten;User ID=sa;Password=phoenix;Encrypt=False;TrustServerCertificate=True;");
-        conn.Open();
+        string codesFile =
+        Path.Combine(AppContext.BaseDirectory, "mosmix_codes.txt");
 
-        var germanCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!File.Exists(codesFile))
+            throw new FileNotFoundException(
+            $"Datei nicht gefunden: {codesFile}");
 
-        using (var cmd = new SqlCommand("SELECT mosmix_code FROM mosmix_station_mapping", conn))
-        using (var rd = cmd.ExecuteReader())
-        {
-            while (rd.Read())
-            {
-                if (!rd.IsDBNull(0))
-                    germanCodes.Add(rd.GetString(0));
-            }
-        }
-
-        var extraStations = new[] { "SCHMELZ-HUETTERSDORF", "BONN-ROLEBER" };
+        var germanCodes = new HashSet<string>(
+        File.ReadAllLines(codesFile)
+        .Where(x => !string.IsNullOrWhiteSpace(x))
+        .Select(x => x.Trim()),
+        StringComparer.OrdinalIgnoreCase);
 
         return stations.Where(s =>
-            !string.IsNullOrWhiteSpace(s.Code) &&
-            (germanCodes.Contains(s.Code) || extraStations.Contains(s.Name, StringComparer.OrdinalIgnoreCase))
+        !string.IsNullOrWhiteSpace(s.Code) &&
+        (
+        germanCodes.Contains(s.Code) ||
+        germanCodes.Contains(s.Name)
+        )
         );
     }
 
@@ -307,30 +301,6 @@ public class MosmixParser
         }
 
         return result;
-    }
-
-    public static DateTime? ExtractMosmixRunTime(string kmlPath)
-    {
-        XDocument doc = XDocument.Load(kmlPath);
-
-        XNamespace dwd = "https://opendata.dwd.de/weather/lib/pointforecast_dwd_extension_V1_0.xsd";
-
-        var issueNode = doc.Descendants(dwd + "IssueTime").FirstOrDefault();
-        if (issueNode == null)
-            return null;
-
-        if (DateTime.TryParse(issueNode.Value, null, DateTimeStyles.AdjustToUniversal, out var dt))
-            return dt;
-
-        return null;
-    }
-
-    public static double ComputeMosmixMonthlyAverage(Dictionary<DateTime, double> daily)
-    {
-        if (daily == null || daily.Count == 0)
-            return 0.0;
-
-        return daily.Values.Average();
     }
 
     public Dictionary<DateTime, List<(string Station, double Tmax)>>
