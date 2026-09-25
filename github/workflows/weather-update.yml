@@ -1,0 +1,30 @@
+name: Weather Forecast Update
+ 
+on:
+schedule:
+- cron: '30 8 * * *' # 10:30 MESZ
+- cron: '30 13 * * *' # 15:30 MESZ
+- cron: '30 20 * * *' # 22:30 MESZ
+workflow_dispatch:
+ 
+jobs:
+run-weather:
+runs-on: ubuntu-latest
+ 
+steps:
+- name: Checkout repository
+uses: actions/checkout@v4
+ 
+- name: Setup .NET
+uses: actions/setup-dotnet@v4
+with:
+dotnet-version: '8.0.x'
+ 
+- name: Restore dependencies
+run: dotnet restore
+ 
+- name: Build
+run: dotnet build --configuration Release --no-restore
+ 
+- name: Execute application
+run: dotnet run --configuration Release --project ./code
