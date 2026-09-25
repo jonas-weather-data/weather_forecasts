@@ -74,7 +74,7 @@ public class OpenMeteoAggregator
             }
 
         //return list;
-        return list.Take(20).ToList(); // Teste weniger Punkte
+        return list.Take(40).ToList(); // Teste weniger Punkte
     }
 
     // ------------------------------------------------------------
