@@ -86,7 +86,13 @@ public class OpenMeteoAggregator
             try
             {
                 await _semaphore.WaitAsync();
-                return await _client.GetStringAsync(url);
+                using var response = await _client.GetAsync(url);
+
+                Console.WriteLine($"{response.StatusCode} {url}");
+
+                response.EnsureSuccessStatusCode();
+
+                return await response.Content.ReadAsStringAsync();
             }
             catch (Exception ex)
             {
@@ -266,6 +272,7 @@ public class OpenMeteoAggregator
             $"&timezone=Europe/Berlin" +
             $"&forecast_days=16";
 
+        Console.WriteLine(url);
         string json = await SafeGetStringAsync(url);
 
         using var doc = JsonDocument.Parse(json);
@@ -302,6 +309,7 @@ public class OpenMeteoAggregator
             $"&timezone=Europe/Berlin" +
             $"&forecast_days=16";
 
+        Console.WriteLine(url);
         string json = await SafeGetStringAsync(url);
 
         using var doc = JsonDocument.Parse(json);

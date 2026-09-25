@@ -35,6 +35,22 @@ class Program
     {
         Environment.CurrentDirectory = AppContext.BaseDirectory;
 
+        // TEST...
+        using var client_test = new HttpClient();
+
+        try
+        {
+            var result = await client_test.GetStringAsync(
+            "https://api.open-meteo.com/v1/forecast?latitude=50&longitude=7&daily=precipitation_sum&forecast_days=1");
+
+            Console.WriteLine("TEST OK");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
+        // ...TEST
+
         DateTime today = DateTime.Today;
 
         string? run = DetectRun(DateTime.Now);
