@@ -21,10 +21,10 @@ with:
 dotnet-version: '8.0.x'
  
 - name: Restore dependencies
-run: dotnet restore
+run: dotnet restore ./code/GetDWDTagesdaten.csproj
  
 - name: Build
-run: dotnet build --configuration Release --no-restore
+run: dotnet build ./code/GetDWDTagesdaten.csproj --configuration Release --no-restore
  
 - name: Execute application
-run: dotnet run --configuration Release --project ./code
+run: dotnet run --project ./code/GetDWDTagesdaten.csproj --configuration Release
