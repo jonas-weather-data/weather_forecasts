@@ -24,11 +24,7 @@ public class OpenMeteoAggregator
             UseCookies = false,
             PooledConnectionLifetime = TimeSpan.FromMinutes(2),
             PooledConnectionIdleTimeout = TimeSpan.FromSeconds(30),
-            MaxConnectionsPerServer = 20,
-            SslOptions =
-        {
-            RemoteCertificateValidationCallback = (_, _, _, _) => true
-        }
+            MaxConnectionsPerServer = 2
         };
 
         _client = new HttpClient(handler)
@@ -85,7 +81,7 @@ public class OpenMeteoAggregator
     // ------------------------------------------------------------
     private async Task<string> SafeGetStringAsync(string url)
     {
-        for (int attempt = 1; attempt <= 2; attempt++) // 1 Versuch + 1 Retry
+        for (int attempt = 1; attempt <= 5; attempt++) // 1 Versuch + 4 Retry
         {
             try
             {
@@ -94,10 +90,10 @@ public class OpenMeteoAggregator
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"HTTP-Fehler (Versuch {attempt}/2): {ex.ToString()}");
-                if (attempt == 2)
+                Console.WriteLine($"HTTP-Fehler (Versuch {attempt}/5): {ex.ToString()}");
+                if (attempt == 5)
                     throw; // beim letzten Versuch Fehler weiterwerfen
-                await Task.Delay(2000);
+                await Task.Delay(10000);
             }
             finally
             {
