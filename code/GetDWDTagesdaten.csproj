@@ -15,4 +15,19 @@
     <PackageReference Include="ScottPlot" Version="5.0.26" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="00_z_prognose_rain.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="00_z_prognose_sun.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="00_z_prognose_temp.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="mosmix_codes.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
