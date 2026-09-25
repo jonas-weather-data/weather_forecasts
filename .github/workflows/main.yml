@@ -1,5 +1,8 @@
 name: Weather Forecast Update
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
   schedule:
@@ -18,7 +21,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "10.0.x"
 
       - name: Restore dependencies
         run: dotnet restore ./code/GetDWDTagesdaten.csproj
@@ -28,3 +31,5 @@ jobs:
 
       - name: Execute application
         run: dotnet run --project ./code/GetDWDTagesdaten.csproj --configuration Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
