@@ -94,7 +94,7 @@ public class OpenMeteoAggregator
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"HTTP-Fehler (Versuch {attempt}/2): {ex.Message}");
+                Console.WriteLine($"HTTP-Fehler (Versuch {attempt}/2): {ex.ToString()}");
                 if (attempt == 2)
                     throw; // beim letzten Versuch Fehler weiterwerfen
                 await Task.Delay(2000);
