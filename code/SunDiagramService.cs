@@ -234,7 +234,14 @@ public class SunDiagramService
         model.Legends.Add(legend);
 
         // Zeitstempel hinzufügen
-        var timestamp = DateTime.Now.ToString("dd.MM.yyyy, HH:mm 'MESZ'");
+        var tz = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+        var nowBerlin = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+
+        var zone = tz.IsDaylightSavingTime(nowBerlin)
+        ? "MESZ"
+        : "MEZ";
+
+        var timestamp = nowBerlin.ToString("dd.MM.yyyy, HH:mm") + $" {zone}";
         model.Annotations.Add(new TextAnnotation
         {
             Text = $"Erstellt am {timestamp}",
