@@ -5,6 +5,8 @@ permissions:
 
 on:
   workflow_dispatch:
+  repository_dispatch:
+    types: [weather-update]
 
 jobs:
   run-weather:
