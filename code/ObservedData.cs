@@ -1,4 +1,4 @@
-﻿public class ClimateData
+﻿public class ObservedData
 {
     public double[] Sun { get; set; } = [];
     public double[] Rain { get; set; } = [];

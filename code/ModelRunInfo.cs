@@ -21,13 +21,6 @@ public class ModelRunInfo
     public string RunString => $"{ModelName}: Modelllauf {RunTimeUtc:dd.MM.yyyy HH:mm} UTC";
 }
 
-public class ObservedData
-{
-    public double[] Sun { get; set; } = Array.Empty<double>();
-    public double[] Rain { get; set; } = Array.Empty<double>();
-    public double[] Temp { get; set; } = Array.Empty<double>();
-}
-
 public class ForecastData
 {
     public TempSeriesResult IconTemp { get; set; } = new();
