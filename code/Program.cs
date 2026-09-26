@@ -15,20 +15,18 @@ class Program
         { "GEM" , "gem_global" }
     };
 
-    private static string? DetectRun(DateTime now)
+    private static string DetectRun()
     {
-        var t = now.TimeOfDay;
+        var tzBerlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+        var t = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzBerlin).TimeOfDay;
 
         if (t < new TimeSpan(12, 0, 0))
             return "00z";
 
-        if (t >= new TimeSpan(12, 0, 0) && t <= new TimeSpan(19, 0, 0))
+        if (t < new TimeSpan(19, 0, 0))
             return "06z";
 
-        if (t >= new TimeSpan(19, 0, 0))
-            return "12z";
-
-        return null;
+        return "12z";
     }
 
     static async Task RunForecastAsync()
@@ -53,7 +51,7 @@ class Program
 
         DateTime today = DateTime.Today;
 
-        string? run = DetectRun(DateTime.Now);
+        string? run = DetectRun();
 
         if (run == null)
             return;
