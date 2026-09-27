@@ -1,4 +1,4 @@
-name: DWD Monatsbilanz
+name: DWD Sonnenschein Rekord
 
 permissions:
   contents: write
@@ -9,7 +9,7 @@ on:
     types: [sonne-rekord-update]
 
 jobs:
-  run-monatsbilanz:
+  run-sunshine_record:
     runs-on: windows-latest
 
     steps:
@@ -28,22 +28,22 @@ jobs:
 
       - name: Generate sunshine maps
         run: |
-          python ./monatsbilanz/sunshine_record_map.py
+          python ./sunshine_record/sunshine_record_map.py
 
       - name: Check generated files
         shell: pwsh
         run: |
-          Get-ChildItem .\monatsbilanz\output
+          Get-ChildItem .\sunshine_record\output
 
-          if (!(Test-Path .\monatsbilanz\output\sunshine_2026.png)) {
+          if (!(Test-Path .\sunshine_record\output\sunshine_2026.png)) {
             Write-Error "sunshine_2026.png wurde nicht erzeugt."
           }
 
-          if (!(Test-Path .\monatsbilanz\output\sunshine_records.png)) {
+          if (!(Test-Path .\sunshine_record\output\sunshine_records.png)) {
             Write-Error "sunshine_records.png wurde nicht erzeugt."
           }
 
-          if (!(Test-Path .\monatsbilanz\output\sunshine_remaining.png)) {
+          if (!(Test-Path .\sunshine_record\output\sunshine_remaining.png)) {
             Write-Error "sunshine_remaining.png wurde nicht erzeugt."
           }
 
@@ -53,9 +53,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add ./monatsbilanz/output/sunshine_2026.png
-          git add ./monatsbilanz/output/sunshine_records.png
-          git add ./monatsbilanz/output/sunshine_remaining.png
+          git add ./sunshine_record/output/sunshine_2026.png
+          git add ./sunshine_record/output/sunshine_records.png
+          git add ./sunshine_record/output/sunshine_remaining.png
 
           git commit -m "DWD Sonnenschein-Karten aktualisieren" `
             || Write-Host "Keine Änderungen vorhanden."
