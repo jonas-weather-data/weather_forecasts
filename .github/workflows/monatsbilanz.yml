@@ -31,7 +31,7 @@ jobs:
 
       - name: Check generated files
         run: |
-          ls -lh ./monatsbilanz/output/
+          Get-ChildItem .\monatsbilanz\output
           test -f ./monatsbilanz/output/sdk_monat.png
           test -f ./monatsbilanz/output/rsk_monat.png
           test -f ./monatsbilanz/output/tmk_monat.png
