@@ -27,7 +27,7 @@ jobs:
 
       - name: Generate monthly maps
         run: |
-          python ./monatsbilanz/dwd_monatskarten_parallel_fertig.py
+          python ./monatsbilanz/dwd_monatskarten.py
 
       - name: Check generated files
         run: |
