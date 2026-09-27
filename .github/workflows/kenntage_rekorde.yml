@@ -1,0 +1,68 @@
+name: DWD Sommer- und Hitzetage
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [kenntage-rekorde-update]
+
+jobs:
+  run-summer_heat_maps:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests pandas geopandas matplotlib
+
+      - name: Generate summer and heat maps
+        run: |
+          python ./kenntage_rekorde/sommerrekorde.py
+
+      - name: Check generated files
+        shell: pwsh
+        run: |
+          Get-ChildItem .\kenntage_rekorde\output
+
+          if (!(Test-Path .\kenntage_rekorde\output\karte_sommertage_2026.png)) {
+            Write-Error "karte_sommertage_2026.png wurde nicht erzeugt."
+          }
+
+          if (!(Test-Path .\kenntage_rekorde\output\karte_sommertage_diff.png)) {
+            Write-Error "karte_sommertage_diff.png wurde nicht erzeugt."
+          }
+
+          if (!(Test-Path .\kenntage_rekorde\output\karte_hitzetage_2026.png)) {
+            Write-Error "karte_hitzetage_2026.png wurde nicht erzeugt."
+          }
+
+          if (!(Test-Path .\kenntage_rekorde\output\karte_hitzetage_diff.png)) {
+            Write-Error "karte_hitzetage_diff.png wurde nicht erzeugt."
+          }
+
+      - name: Commit and push PNGs
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add ./kenntage_rekorde/output/karte_sommertage_2026.png
+          git add ./kenntage_rekorde/output/karte_sommertage_diff.png
+          git add ./kenntage_rekorde/output/karte_hitzetage_2026.png
+          git add ./kenntage_rekorde/output/karte_hitzetage_diff.png
+
+          git commit -m "DWD Sommer- und Hitzetage-Karten aktualisieren" `
+            || Write-Host "Keine Änderungen vorhanden."
+
+          git push
