@@ -834,8 +834,11 @@ if (
 log('')
 log('[5/5] Erzeuge Karten ...')
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_DIR = os.path.join(BASE_DIR, 'output')
+
 os.makedirs(
-    'output',
+    OUTPUT_DIR,
     exist_ok=True
 )
 
@@ -843,18 +846,20 @@ stichtag = DATA_DATE.strftime(
     '%d.%m.%Y'
 )
 
-current_output = (
-    f'output/sunshine_{CURRENT_YEAR}.png'
+current_output = os.path.join(
+    OUTPUT_DIR,
+    f'sunshine_{CURRENT_YEAR}.png'
 )
 
-records_output = (
-    'output/sunshine_records.png'
+records_output = os.path.join(
+    OUTPUT_DIR,
+    'sunshine_records.png'
 )
 
-remaining_output = (
-    'output/sunshine_remaining.png'
+remaining_output = os.path.join(
+    OUTPUT_DIR,
+    'sunshine_remaining.png'
 )
-
 
 create_map(
     results,
