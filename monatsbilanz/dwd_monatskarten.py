@@ -501,7 +501,7 @@ TARGET_STATIONS = {
     '19207'
 }
 
-MAX_WORKERS = 64
+MAX_WORKERS = 16
 SHAPEFILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     'gadm41_DEU_1.json'
