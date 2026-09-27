@@ -1,0 +1,49 @@
+name: DWD Monatsbilanz
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [sonne-rekord-update]
+
+jobs:
+  run-monatsbilanz:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install requests pandas geopandas matplotlib numpy
+
+      - name: Generate monthly maps
+        run: |
+          python ./monatsbilanz/dwd_monatskarten.py
+
+      - name: Check generated files
+        run: |
+          Get-ChildItem .\monatsbilanz\output
+          test -f ./monatsbilanz/output/sdk_monat.png
+          test -f ./monatsbilanz/output/rsk_monat.png
+          test -f ./monatsbilanz/output/tmk_monat.png
+
+      - name: Commit and push PNGs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add ./monatsbilanz/output/sdk_monat.png
+          git add ./monatsbilanz/output/rsk_monat.png
+          git add ./monatsbilanz/output/tmk_monat.png
+
+          git commit -m "DWD Monatsbilanz aktualisieren" || echo "Keine Änderungen vorhanden."
+          git push
