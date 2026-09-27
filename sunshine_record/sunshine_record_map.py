@@ -131,7 +131,7 @@ STATIONS_URL = (
 )
 
 RECENT_URL = (
-    'https://opendata.dwd.de/climate_environment/CDC/
+    'https://opendata.dwd.de/climate_environment/CDC/'
     'observations_germany/climate/daily/kl/recent/'
 )
 
