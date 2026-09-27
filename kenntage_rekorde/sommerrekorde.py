@@ -30,15 +30,34 @@ if os.environ.get("GITHUB_ACTIONS") == "true":
 
 MAX_WORKERS = 16
 
-STATIONEN_CSV = "stationen.csv"
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
 
-SOMMERTAGE_REKORDE = "sommertagrekorde.txt"
+STATIONEN_CSV = os.path.join(
+    BASE_DIR,
+    "stationen.csv"
+)
 
-HITZETAGE_REKORDE = "hitzetagrekorde.txt"
+SOMMERTAGE_REKORDE = os.path.join(
+    BASE_DIR,
+    "sommertagrekorde.txt"
+)
 
-SHAPEFILE = "gadm41_DEU_1.json"
+HITZETAGE_REKORDE = os.path.join(
+    BASE_DIR,
+    "hitzetagrekorde.txt"
+)
 
-OUTPUT_DIR = "output"
+SHAPEFILE = os.path.join(
+    BASE_DIR,
+    "gadm41_DEU_1.json"
+)
+
+OUTPUT_DIR = os.path.join(
+    BASE_DIR,
+    "output"
+)
 
 
 # ============================================================
