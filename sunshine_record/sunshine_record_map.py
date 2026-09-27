@@ -131,11 +131,14 @@ STATIONS_URL = (
 )
 
 RECENT_URL = (
-    'https://opendata.dwd.de/climate_environment/CDC/'
+    'https://opendata.dwd.de/climate_environment/CDC/
     'observations_germany/climate/daily/kl/recent/'
 )
 
-SHAPEFILE = 'gadm41_DEU_1.json'
+SHAPEFILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    'gadm41_DEU_1.json'
+)
 
 TARGET_STATIONS = set(STATIONS.keys())
 
