@@ -26,11 +26,23 @@ STATIONS_URL = (
     "KL_Tageswerte_Beschreibung_Stationen.txt"
 )
 
-SHAPEFILE = "gadm41_DEU_1.json"
+# Alle lokalen Dateien liegen im GitHub-Ordner "live"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-STATION_LIST = "stationen_extreme.csv"
+SHAPEFILE = os.path.join(
+    BASE_DIR,
+    "gadm41_DEU_1.json"
+)
 
-OUTPUT_DIR = "output"
+STATION_LIST = os.path.join(
+    BASE_DIR,
+    "stationen_extreme.csv"
+)
+
+OUTPUT_DIR = os.path.join(
+    BASE_DIR,
+    "output"
+)
 
 TXK_OUTPUT = os.path.join(
     OUTPUT_DIR,
