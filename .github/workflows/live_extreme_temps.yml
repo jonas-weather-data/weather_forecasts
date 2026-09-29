@@ -1,4 +1,4 @@
-name: DWD Live-Extremtemperaturen
+name: DWD Live Extremtemperaturen
 
 permissions:
   contents: write
@@ -9,7 +9,7 @@ on:
     types: [live-extrem-temps-update]
 
 jobs:
-  run-live_extrem_temps:
+  run-extreme-temperature-maps:
     runs-on: windows-latest
 
     steps:
@@ -20,13 +20,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install requests pandas geopandas matplotlib
+          pip install -r requirements.txt
 
-      - name: Generate live extreme temperature maps
+      - name: Generate extreme temperature maps
         run: |
           python ./live/live_extrem_temps.py
 
@@ -52,7 +52,7 @@ jobs:
           git add ./live/output/extrema_txk.png
           git add ./live/output/extrema_tnk.png
 
-          git commit -m "DWD Live-Extremtemperaturen aktualisieren" `
+          git commit -m "DWD Live-Extremtemperaturkarten aktualisieren" `
             || Write-Host "Keine Änderungen vorhanden."
 
           git push
