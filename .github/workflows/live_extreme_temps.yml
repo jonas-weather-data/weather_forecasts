@@ -10,40 +10,60 @@ on:
 
 jobs:
   run-extreme-temperature-maps:
-    runs-on: ubuntu-slim
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v7
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
-          cache-dependency-path: requirements.txt
 
-      - name: Install dependencies
+      - name: Restore Python environment
+        id: python-cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: windows-python-3.12-${{ hashFiles('requirements.txt') }}
+
+      - name: Create Python environment
+        if: steps.python-cache.outputs.cache-hit != 'true'
+        shell: pwsh
         run: |
-          pip install -r requirements.txt
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 
       - name: Generate extreme temperature maps
+        shell: pwsh
         run: |
-          python ./live/live_extrem_temps.py
+          .\.venv\Scripts\python.exe .\live\live_extrem_temps.py
 
       - name: Check generated files
+        shell: pwsh
         run: |
-          test -f ./live/output/extrema_txk.png
-          test -f ./live/output/extrema_tnk.png
+          Get-ChildItem .\live\output
+
+          if (!(Test-Path .\live\output\extrema_txk.png)) {
+            Write-Error "extrema_txk.png wurde nicht erzeugt."
+          }
+
+          if (!(Test-Path .\live\output\extrema_tnk.png)) {
+            Write-Error "extrema_tnk.png wurde nicht erzeugt."
+          }
 
       - name: Commit and push PNGs
+        shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add ./live/output/extrema_txk.png
-          git add ./live/output/extrema_tnk.png
+          git add .\live\output\extrema_txk.png
+          git add .\live\output\extrema_tnk.png
 
-          git diff --cached --quiet || git commit -m "DWD Live-Extremtemperaturkarten aktualisieren"
+          git commit -m "DWD Live-Extremtemperaturkarten aktualisieren" `
+            || Write-Host "Keine Änderungen vorhanden."
 
           git push
