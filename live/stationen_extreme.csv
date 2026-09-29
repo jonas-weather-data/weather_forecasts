@@ -1,0 +1,559 @@
+station_id;name;bundesland
+00011;Donaueschingen (Landeplatz);Baden-Württemberg
+00044;Großenkneten;Niedersachsen
+00073;Aldersbach-Kramersepp;Bayern
+00078;Alfhausen;Niedersachsen
+00090;Alsfeld;Hessen
+00091;Alsfeld-Eifa;Hessen
+00096;Neuruppin-Alt Ruppin;Brandenburg
+00102;Leuchtturm Alte Weser;Niedersachsen
+00125;Altenstadt;Bayern
+00131;Geringswalde-Altgeringswalde;Sachsen
+00142;Altomünster-Maisbrunn;Bayern
+00150;Alzey;Rheinland-Pfalz
+00151;Amberg-Unterammersricht;Bayern
+00154;Amerang-Pfaffing;Bayern
+00161;Andernach;Rheinland-Pfalz
+00164;Angermünde;Brandenburg
+00167;Anklam;Mecklenburg-Vorpommern
+00183;Arkona;Mecklenburg-Vorpommern
+00191;Arnstein-Müdesheim;Bayern
+00197;Arolsen-Volkhardinghausen, Bad;Hessen
+00198;Artern;Thüringen
+00217;Attenkam;Bayern
+00222;Aue;Sachsen
+00232;Augsburg;Bayern
+00257;Baden-Baden-Geroldsau;Baden-Württemberg
+00259;Müllheim;Baden-Württemberg
+00282;Bamberg;Bayern
+00294;Barsinghausen-Hohenbostel;Niedersachsen
+00298;Barth;Mecklenburg-Vorpommern
+00303;Baruth;Brandenburg
+00314;Kubschütz, Kr. Bautzen;Sachsen
+00320;Heinersreuth-Vollhof;Bayern
+00330;Oberzent-Beerfelden;Hessen
+00342;Belm;Niedersachsen
+00368;Bergen;Niedersachsen
+00377;Bergzabern, Bad;Rheinland-Pfalz
+00379;Berka, Bad (Flugplatz);Thüringen
+00390;Berleburg, Bad-Stünzel;Nordrhein-Westfalen
+00400;Berlin-Buch;Berlin
+00403;Berlin-Dahlem (FU);Berlin
+00420;Berlin-Marzahn;Berlin
+00427;Berlin Brandenburg;Brandenburg
+00433;Berlin-Tempelhof;Berlin
+00445;Bernburg/Saale (Nord);Sachsen-Anhalt
+00460;Berus;Saarland
+00535;Blankenrath;Rheinland-Pfalz
+00555;Bochum;Nordrhein-Westfalen
+00591;Boizenburg;Mecklenburg-Vorpommern
+00596;Boltenhagen;Mecklenburg-Vorpommern
+00603;Königswinter-Heiderhof;Nordrhein-Westfalen
+00617;Borken in Westfalen;Nordrhein-Westfalen
+00619;Borkum-Süderstraße;Niedersachsen
+00642;Brake;Niedersachsen
+00656;Braunlage;Niedersachsen
+00662;Braunschweig;Niedersachsen
+00691;Bremen;Bremen
+00701;Bremerhaven;Bremen
+00704;Bremervörde;Niedersachsen
+00722;Brocken;Sachsen-Anhalt
+00755;Buchen, Kr. Neckar-Odenwald;Baden-Württemberg
+00757;Buchenbach;Baden-Württemberg
+00760;Rosengarten-Klecken;Niedersachsen
+00766;Büchel-Alflen;Rheinland-Pfalz
+00769;Bückeburg;Niedersachsen
+00788;Büsum;Schleswig-Holstein
+00817;Burgwald-Bottendorf;Hessen
+00840;Carlsfeld;Sachsen
+00850;Celle;Niedersachsen
+00853;Chemnitz;Sachsen
+00856;Chieming;Bayern
+00860;Algermissen-Groß Lobke;Niedersachsen
+00867;Lautertal-Oberlauter;Bayern
+00880;Cottbus;Brandenburg
+00891;Cuxhaven;Niedersachsen
+00896;Dachwig;Thüringen
+00917;Darmstadt;Hessen
+00953;Deuselbach;Rheinland-Pfalz
+00963;Diepholz;Niedersachsen
+00983;Dillingen/Donau-Fristingen;Bayern
+00991;Dippoldiswalde-Reinberg;Sachsen
+01001;Doberlug-Kirchhain;Brandenburg
+01011;Dörrmoschel-Felsbergerhof;Rheinland-Pfalz
+01013;Dogern;Baden-Württemberg
+01048;Dresden-Klotzsche;Sachsen
+01050;Dresden-Hosterwitz;Sachsen
+01052;Möckern-Drewitz;Sachsen-Anhalt
+01072;Dürkheim, Bad;Rheinland-Pfalz
+01078;Düsseldorf;Nordrhein-Westfalen
+01103;Ebersberg-Halbing;Bayern
+01107;Ebrach;Bayern
+01161;Eichstätt-Landershofen;Bayern
+01197;Ellwangen-Rindelbach;Baden-Württemberg
+01200;Elpersbüttel;Schleswig-Holstein
+01207;Elster, Bad-Sohl;Sachsen
+01214;Elzach-Fisnacht;Baden-Württemberg
+01224;Emmendingen-Mundingen;Baden-Württemberg
+01246;Ennigerloh-Ostenfelde;Nordrhein-Westfalen
+01255;Eppingen-Elsenz;Baden-Württemberg
+01262;München-Flughafen;Bayern
+01266;Erfde;Schleswig-Holstein
+01270;Erfurt-Weimar;Thüringen
+01279;Möhrendorf-Kleinseebach;Bayern
+01297;Eschwege;Hessen
+01300;Eslohe;Nordrhein-Westfalen
+01303;Essen-Bredeney;Nordrhein-Westfalen
+01327;Weilerswist-Lommersum;Nordrhein-Westfalen
+01332;Falkenberg,Kr.Rottal-Inn;Bayern
+01339;Faßberg;Niedersachsen
+01346;Feldberg/Schwarzwald;Baden-Württemberg
+01357;Fichtelberg/Oberfranken-Hüttstadl;Bayern
+01358;Fichtelberg;Sachsen
+01379;Flensburg (Schäferhaus);Schleswig-Holstein
+01411;Birx/Rhön;Thüringen
+01420;Frankfurt/Main;Hessen
+01424;Frankfurt/Main-Westend;Hessen
+01443;Freiburg;Baden-Württemberg
+01451;Freiburg/Elbe;Niedersachsen
+01468;Freudenstadt;Baden-Württemberg
+01490;Friedrichshafen;Baden-Württemberg
+01503;Friesoythe-Altenoythe;Niedersachsen
+01504;Fritzlar/Eder;Hessen
+01526;Fulda-Horas;Hessen
+01544;Gardelegen;Sachsen-Anhalt
+01550;Garmisch-Partenkirchen;Bayern
+01572;Geilenkirchen-Neutevern;Nordrhein-Westfalen
+01580;Geisenheim;Hessen
+01587;Gelbelsee;Bayern
+01590;Geldern-Walbeck;Nordrhein-Westfalen
+01602;Ohlsbach;Baden-Württemberg
+01605;Genthin;Sachsen-Anhalt
+01612;Gera-Leumnitz;Thüringen
+01639;Gießen/Wettenberg;Hessen
+01645;Gilserberg-Moischeid;Hessen
+01666;Glücksburg-Meierwik;Schleswig-Holstein
+01684;Görlitz;Sachsen
+01691;Göttingen;Niedersachsen
+01694;Goldberg;Mecklenburg-Vorpommern
+01721;Gräfenberg-Kasberg;Bayern
+01735;Grainet-Rehberg;Bayern
+01736;Grambek;Schleswig-Holstein
+01757;Greifswald;Mecklenburg-Vorpommern
+01759;Greifswalder Oie;Mecklenburg-Vorpommern
+01766;Münster/Osnabrück;Nordrhein-Westfalen
+01792;Groß Berßen;Niedersachsen
+01803;Sanitz-Groß Lüsewitz;Mecklenburg-Vorpommern
+01832;Großer Arber;Bayern
+01863;Gründau-Breitenborn;Hessen
+01869;Grünow;Brandenburg
+01886;Günzburg;Bayern
+01963;Hallig Hooge;Schleswig-Holstein
+01964;Olsdorf;Rheinland-Pfalz
+01975;Hamburg-Fuhlsbüttel;Hamburg
+01981;Hamburg-Neuwiedenthal;Hamburg
+01993;Hameln;Niedersachsen
+02014;Hannover;Niedersachsen
+02023;Harburg;Bayern
+02039;Harzburg, Bad;Niedersachsen
+02044;Harzgerode;Sachsen-Anhalt
+02074;Hechingen;Baden-Württemberg
+02115;Helgoland;Schleswig-Holstein
+02171;Hersfeld, Bad;Hessen
+02174;Herzberg;Niedersachsen
+02201;Hiddensee-Vitte;Mecklenburg-Vorpommern
+02211;Hilgenroth;Rheinland-Pfalz
+02252;Bertsdorf-Hörnitz;Sachsen
+02261;Hof;Bayern
+02290;Hohenpeißenberg;Bayern
+02303;Hohn;Schleswig-Holstein
+02306;Hohwacht;Schleswig-Holstein
+02315;Holzdorf-Bernsdorf;Brandenburg
+02319;Holzkirchen;Bayern
+02323;Bevern, Kr. Holzminden;Niedersachsen
+02349;Hornisgrinde;Baden-Württemberg
+02377;Kandern-Gupf;Baden-Württemberg
+02385;Idar-Oberstein;Rheinland-Pfalz
+02410;Ingolstadt-Manching;Bayern
+02429;Itzehoe;Schleswig-Holstein
+02437;Schleswig-Jagel;Schleswig-Holstein
+02444;Jena (Sternwarte);Thüringen
+02480;Kahl/Main;Bayern
+02483;Kahler Asten;Nordrhein-Westfalen
+02485;Kaisersbach-Cronhütte;Baden-Württemberg
+02486;Kaiserslautern;Rheinland-Pfalz
+02497;Kall-Sistig;Nordrhein-Westfalen
+02559;Kempten;Bayern
+02564;Kiel-Holtenau;Schleswig-Holstein
+02573;Waging am See-Schnöbling;Bayern
+02575;Kirchberg/Jagst-Herboldshausen;Baden-Württemberg
+02578;Kirchdorf/Poel;Mecklenburg-Vorpommern
+02597;Kissingen, Bad;Bayern
+02600;Kitzingen;Bayern
+02601;Kleiner Feldberg/Taunus;Hessen
+02618;Kleiner Inselsberg;Thüringen
+02627;Schipkau-Klettwitz;Brandenburg
+02629;Kleve;Nordrhein-Westfalen
+02638;Klippeneck;Baden-Württemberg
+02641;Klitzschen bei Torgau;Sachsen
+02667;Köln/Bonn;Nordrhein-Westfalen
+02680;Königshofen, Bad;Bayern
+02700;Kösching;Bayern
+02704;Köthen (Anhalt);Sachsen-Anhalt
+02708;Kohlgrub, Bad (Rosshof);Bayern
+02712;Konstanz;Baden-Württemberg
+02750;Kronach;Bayern
+02773;Kümmersbruck;Bayern
+02794;Kyritz;Brandenburg
+02796;Laage-Kronskamp;Mecklenburg-Vorpommern
+02812;Lahr;Baden-Württemberg
+02856;Niedergörsdorf-Langenlipsdorf;Brandenburg
+02878;Lauchstädt, Bad;Sachsen-Anhalt
+02886;Laupheim;Baden-Württemberg
+02897;Lautertal-Hörgenau;Hessen
+02905;Lechfeld;Bayern
+02907;Leck;Schleswig-Holstein
+02925;Leinefelde;Thüringen
+02928;Leipzig-Holzhausen;Sachsen
+02932;Leipzig/Halle;Sachsen
+02947;Lennestadt-Theten;Nordrhein-Westfalen
+02951;Lenzen/Elbe;Brandenburg
+02953;Lenzkirch-Ruhbühl;Baden-Württemberg
+02985;Lichtenhain-Mittelndorf;Sachsen
+03015;Lindenberg;Brandenburg
+03028;Lippspringe, Bad;Nordrhein-Westfalen
+03031;Lippstadt-Bökenförde;Nordrhein-Westfalen
+03032;List auf Sylt;Schleswig-Holstein
+03034;Lobenstein, Bad;Thüringen
+03042;Löhnberg-Obershausen;Hessen
+03083;Lübben-Blumenfelde;Brandenburg
+03086;Lübeck-Blankensee;Schleswig-Holstein
+03093;Lüchow;Niedersachsen
+03098;Lüdenscheid;Nordrhein-Westfalen
+03126;Magdeburg;Sachsen-Anhalt
+03137;Mainz-Lerchenberg (ZDF);Rheinland-Pfalz
+03147;Mallersdorf-Pfaffenberg-Oberlindhart;Bayern
+03155;Manderscheid-Sonnenhof;Rheinland-Pfalz
+03158;Manschnow;Brandenburg
+03164;Cölbe, Kr. Marburg-Biedenkopf;Hessen
+03166;Marienberg;Sachsen
+03167;Marienberg, Bad;Rheinland-Pfalz
+03181;Markt Erlbach-Hagenhofen;Bayern
+03196;Marnitz;Mecklenburg-Vorpommern
+03204;Martinroda;Thüringen
+03226;Aschersleben-Mehringen;Sachsen-Anhalt
+03231;Meiningen;Thüringen
+03234;Klipphausen-Garsebach;Sachsen
+03244;Memmingen;Bayern
+03254;Meppen;Niedersachsen
+03257;Mergentheim, Bad;Baden-Württemberg
+03268;Meßstetten-Appental;Baden-Württemberg
+03271;Metten;Bayern
+03278;Metzingen;Baden-Württemberg
+03284;Michelstadt;Hessen
+03287;Michelstadt-Vielbrunn;Hessen
+03289;Schmieritz-Weltwitz;Thüringen
+03307;Mittenwald-Buckelwiesen;Bayern
+03319;Röllbach;Bayern
+03321;Mönchengladbach-Hilderath;Nordrhein-Westfalen
+03348;Moringen-Lutterbeck;Niedersachsen
+03362;Mühlacker;Baden-Württemberg
+03366;Mühldorf;Bayern
+03376;Müncheberg;Brandenburg
+03379;München-Stadt;Bayern
+03402;Münsingen-Apfelstetten;Baden-Württemberg
+03426;Muskau, Bad;Sachsen
+03442;Nauheim, Bad;Hessen
+03484;Neuburg an der Donau;Bayern
+03485;Neuburg/Kammel-Langenhaslach;Bayern
+03490;Neuenahr, Bad-Ahrweiler;Rheinland-Pfalz
+03509;Stechlin-Menz;Brandenburg
+03513;Neuhaus am Rennweg;Thüringen
+03527;Neukirchen-Hauptschwenda;Hessen
+03534;Neumarkt-Höhenberg;Bayern
+03540;Neunkirchen-Seelscheid-Krawinkel;Nordrhein-Westfalen
+03545;Neunkirchen-Wellesweiler;Saarland
+03571;Neustadt am Kulm-Filchendorf;Bayern
+03591;Nideggen-Schmidt;Nordrhein-Westfalen
+03603;Niederstetten;Baden-Württemberg
+03621;Reimlingen;Bayern
+03623;Nörvenich-Niederbolheim;Nordrhein-Westfalen
+03631;Norderney;Niedersachsen
+03639;Nordholz-Wanhöden;Niedersachsen
+03651;Northeim-Stöckheim;Niedersachsen
+03660;Nürburg-Barweiler;Rheinland-Pfalz
+03667;Nürnberg-Netzstall;Bayern
+03668;Nürnberg;Bayern
+03679;Kiefersfelden-Gach;Bayern
+03730;Oberstdorf;Bayern
+03734;Obersulm-Willsbach;Baden-Württemberg
+03739;Oberviechtach;Bayern
+03761;Öhringen;Baden-Württemberg
+03811;Oschatz;Sachsen
+03821;Osterfeld;Sachsen-Anhalt
+03836;Ostheim v.d. Rhön;Bayern
+03857;Oy-Mittelberg-Petersthal;Bayern
+03875;Parsberg/Oberpfalz-Eglwang;Bayern
+03897;Pelzerhaken;Schleswig-Holstein
+03904;Perl-Nennig;Saarland
+03905;Perl-Sinz-Renglischberg;Saarland
+03925;Pforzheim-Ispringen;Baden-Württemberg
+03927;Pfullendorf;Baden-Württemberg
+03939;Pirmasens;Rheinland-Pfalz
+03946;Plauen;Sachsen
+03975;Pommelsbrunn-Mittelburg;Bayern
+03987;Potsdam;Brandenburg
+04024;Putbus;Mecklenburg-Vorpommern
+04032;Quedlinburg;Sachsen-Anhalt
+04036;Querfurt-Mühle Lodersleben;Sachsen-Anhalt
+04039;Quickborn;Schleswig-Holstein
+04063;Rahden-Kleinendorf;Nordrhein-Westfalen
+04094;Weingarten, Kr. Ravensburg;Baden-Württemberg
+04104;Regensburg;Bayern
+04127;Reichshof-Eckenhagen;Nordrhein-Westfalen
+04160;Renningen-Ihinger Hof;Baden-Württemberg
+04169;Rheinau-Memprechtshofen;Baden-Württemberg
+04175;Rheinfelden;Baden-Württemberg
+04177;Rheinstetten;Baden-Württemberg
+04189;Altheim, Kreis Biberach;Baden-Württemberg
+04271;Rostock-Warnemünde;Mecklenburg-Vorpommern
+04275;Rotenburg (Wümme);Niedersachsen
+04279;Roth bei Prüm;Rheinland-Pfalz
+04280;Roth;Bayern
+04287;Rothenburg ob der Tauber;Bayern
+04300;Rottweil;Baden-Württemberg
+04301;Kreuznach, Bad;Rheinland-Pfalz
+04323;Ruppertsecken;Rheinland-Pfalz
+04336;Saarbrücken-Ensheim;Saarland
+04349;Sachsenheim;Baden-Württemberg
+04354;Saldenburg-Entschenreuth;Bayern
+04371;Salzuflen, Bad;Nordrhein-Westfalen
+04377;Sandberg;Bayern
+04393;Sankt Peter-Ording;Schleswig-Holstein
+04411;Schaafheim-Schlierbach;Hessen
+04445;Wernigerode-Schierke;Sachsen-Anhalt
+04464;Schleiz;Thüringen
+04466;Schleswig;Schleswig-Holstein
+04480;Schlüchtern-Herolz;Hessen
+04501;Schmücke;Thüringen
+04508;Schneifelforsthaus;Rheinland-Pfalz
+04548;Schönwald/Ofr.-Brunn;Bayern
+04559;Schorndorf-Knöbling;Bayern
+04592;Schwandorf;Bayern
+04605;Schwarzburg;Thüringen
+04625;Schwerin;Mecklenburg-Vorpommern
+04642;Seehausen;Sachsen-Anhalt
+04651;Seesen;Niedersachsen
+04703;Sigmaringen-Laiz;Baden-Württemberg
+04704;Sigmarszell-Zeisertsweiler;Bayern
+04706;Simbach/Inn;Bayern
+04709;Simmern-Wahlbach;Rheinland-Pfalz
+04745;Soltau;Niedersachsen
+04748;Sondershausen;Thüringen
+04763;Sontra;Hessen
+04813;Staffelstein, Bad-Stublang;Bayern
+04841;Steinau, Kr. Cuxhaven;Niedersachsen
+04857;Mittelnkirchen-Hohenfelde;Niedersachsen
+04878;Oberharz am Brocken-Stiege;Sachsen-Anhalt
+04880;Stimpfach-Weipertshofen;Baden-Württemberg
+04887;Stötten;Baden-Württemberg
+04911;Straubing;Bayern
+04919;Strucklahnungshörn;Schleswig-Holstein
+04928;Stuttgart (Schnarrenberg);Baden-Württemberg
+04931;Stuttgart-Echterdingen;Baden-Württemberg
+04947;Süpplingen;Niedersachsen
+04978;Tann/Rhön;Hessen
+04997;Starkenberg-Tegkwitz;Thüringen
+05009;Teterow;Mecklenburg-Vorpommern
+05014;Worpswede-Hüttenbusch;Niedersachsen
+05017;Teuschnitz;Bayern
+05029;Tholey;Saarland
+05046;Tirschenreuth-Lodermühl;Bayern
+05064;Tönisvorst;Nordrhein-Westfalen
+05078;Travemünde;Schleswig-Holstein
+05097;Tribsees;Mecklenburg-Vorpommern
+05099;Trier-Zewen;Rheinland-Pfalz
+05100;Trier-Petrisberg;Rheinland-Pfalz
+05109;Trollenhagen;Mecklenburg-Vorpommern
+05111;Trostberg;Bayern
+05133;Twistetal-Mühlhausen;Hessen
+05142;Ueckermünde;Mecklenburg-Vorpommern
+05146;Uelzen;Niedersachsen
+05149;Gollhofen;Bayern
+05158;Ummendorf;Sachsen-Anhalt
+05229;Villingen-Schwenningen;Baden-Württemberg
+05275;Waghäusel-Kirrlach;Baden-Württemberg
+05279;Wesertal-Lippoldsberg;Hessen
+05280;Wittenborn;Schleswig-Holstein
+05300;Waldems-Reinborn;Hessen
+05319;Waldsee, Bad-Reute;Baden-Württemberg
+05327;Walldürn;Baden-Württemberg
+05335;Waltershausen;Thüringen
+05347;Warburg;Nordrhein-Westfalen
+05349;Waren (Müritz);Mecklenburg-Vorpommern
+05371;Wasserkuppe;Hessen
+05397;Weiden;Bayern
+05404;Weihenstephan-Dürnast;Bayern
+05412;Weilheim-Bierbronnen;Baden-Württemberg
+05424;Weimar-Schöndorf;Thüringen
+05426;Weinbiet;Rheinland-Pfalz
+05433;Weiskirchen/Saar;Saarland
+05440;Weißenburg-Emetzheim;Bayern
+05480;Werl;Nordrhein-Westfalen
+05490;Wernigerode;Sachsen-Anhalt
+05516;Fehmarn;Schleswig-Holstein
+05538;Wielenbach (Demollstr.);Bayern
+05541;Wiesbaden-Auringen;Hessen
+05546;Wiesenburg;Brandenburg
+05562;Neubulach-Oberhaugstett;Baden-Württemberg
+05629;Wittenberg;Sachsen-Anhalt
+05640;Wittmundhafen;Niedersachsen
+05643;Wittstock-Rote Mühle;Brandenburg
+05664;Wolfach;Baden-Württemberg
+05688;Dachsberg-Wolpadingen;Baden-Württemberg
+05692;Worms;Rheinland-Pfalz
+05705;Würzburg;Bayern
+05715;Wunstorf;Niedersachsen
+05717;Wuppertal-Buchenhofen;Nordrhein-Westfalen
+05731;Wutöschingen-Ofteringen;Baden-Württemberg
+05745;Zehdenick;Brandenburg
+05750;Zeitz;Sachsen-Anhalt
+05779;Zinnwald-Georgenfeld;Sachsen
+05792;Zugspitze;Bayern
+05797;Lichtentanne;Sachsen
+05800;Zwiesel;Bayern
+05822;Bassum;Niedersachsen
+05825;Nauen-Berge;Brandenburg
+05839;Emden;Niedersachsen
+05851;Frankenberg-Geismar;Hessen
+05856;Fürstenzell;Bayern
+05871;Hahn;Rheinland-Pfalz
+05877;Putlos;Schleswig-Holstein
+05906;Mannheim;Baden-Württemberg
+05930;Schönhagen (Ostseebad);Schleswig-Holstein
+06091;Spiekeroog (SWN);Niedersachsen
+06093;Wendisch Evern;Niedersachsen
+06096;Altmühlsee;Bayern
+06097;Darßer Ort (SWN);Mecklenburg-Vorpommern
+06099;Gailingen;Baden-Württemberg
+06101;Bastorf-Kägsdorf (SWN);Mecklenburg-Vorpommern
+06102;Lindau (SWN);Bayern
+06103;Mittenwald/Obb.;Bayern
+06105;Ostenfeld (Rendsburg);Schleswig-Holstein
+06106;Rechlin;Mecklenburg-Vorpommern
+06107;Sipplingen (SWN);Baden-Württemberg
+06108;Ruthenstrom;Niedersachsen
+06109;Grambow-Schwennenz;Mecklenburg-Vorpommern
+06129;Sohland/Spree;Sachsen
+06157;Wangerland-Hooksiel;Niedersachsen
+06158;Weidenbach-Weiherschneidbach;Bayern
+06159;Dörpen;Niedersachsen
+06163;Dörnick;Schleswig-Holstein
+06170;Neißemünde-Coschen;Brandenburg
+06196;Selb-Spielberg;Bayern
+06197;Lügde-Paenbruch;Nordrhein-Westfalen
+06199;Steinhagen-Negast;Mecklenburg-Vorpommern
+06211;Vogtareuth (Kläranlage);Bayern
+06217;Saarbrücken-Burbach;Saarland
+06253;Brandenburg/Havel;Brandenburg
+06258;Friedrichshafen-Unterraderach;Baden-Württemberg
+06259;Großerlach-Mannenweiler;Baden-Württemberg
+06260;Ingelfingen-Stachenhausen;Baden-Württemberg
+06262;Schwäbisch Gmünd-Weiler;Baden-Württemberg
+06263;Singen;Baden-Württemberg
+06264;Brilon-Thülen;Nordrhein-Westfalen
+06265;Wusterwitz;Brandenburg
+06266;Huy-Pabstorf;Sachsen-Anhalt
+06272;Salzungen, Bad-Gräfen-Nitzendorf;Thüringen
+06273;Demker;Sachsen-Anhalt
+06275;Notzingen;Baden-Württemberg
+06305;Mühlhausen/Thüringen-Görmar;Thüringen
+06310;Karlshagen;Mecklenburg-Vorpommern
+06314;Nossen;Sachsen
+06336;Lohr/Main-Halsbach;Bayern
+06337;Lüdinghausen-Brochtrup;Nordrhein-Westfalen
+06344;Runkel-Ennerich;Hessen
+06346;Maisach-Galgen;Bayern
+06347;Schonungen-Mainberg;Bayern
+07075;Elsendorf-Horneck;Bayern
+07105;Siegsdorf-Höll;Bayern
+07106;Bielefeld-Deppendorf;Nordrhein-Westfalen
+07187;Freudenberg/Main-Boxtal;Baden-Württemberg
+07298;Hattstedt;Schleswig-Holstein
+07319;Donauwörth-Osterweiler;Bayern
+07321;Olbersleben;Thüringen
+07329;Treuen;Sachsen
+07330;Arnsberg-Neheim;Nordrhein-Westfalen
+07331;Hermaringen-Allewind;Baden-Württemberg
+07341;Offenbach-Wetterpark;Hessen
+07343;Deutschneudorf-Brüderwiese;Sachsen
+07351;Feldberg/Mecklenburg;Mecklenburg-Vorpommern
+07364;Jeßnitz;Sachsen-Anhalt
+07367;Alfeld;Niedersachsen
+07368;Eisenach;Thüringen
+07369;Feuchtwangen-Heilbronn;Bayern
+07370;Waldmünchen;Bayern
+07373;Borkum-Flugplatz;Niedersachsen
+07374;Ahaus;Nordrhein-Westfalen
+07389;Heckelberg-Brunow;Brandenburg
+07391;Oberzent-Beerfelden-Vogelherd;Hessen
+07392;Aubstadt;Bayern
+07393;Hoyerswerda;Sachsen
+07394;Wunsiedel-Schönbrunn;Bayern
+07395;Gottfrieding;Bayern
+07396;Hoherodskopf/Vogelsberg;Hessen
+07403;Leutkirch-Herlazhofen;Baden-Württemberg
+07410;Neu-Ulrichstein;Hessen
+07412;Neuhütten/Spessart;Bayern
+07416;Birkelbach;Nordrhein-Westfalen
+07419;Langenwetzendorf-Göttendorf;Thüringen
+07420;Naumburg/Saale-Kreipitzsch;Sachsen-Anhalt
+07424;Piding;Bayern
+07427;Padenstedt (Pony-Park);Schleswig-Holstein
+07428;Veilsdorf;Thüringen
+07431;Oberhaching-Laufzorn;Bayern
+07432;Wittingen-Vorhop;Niedersachsen
+10510;Winterbach/Remstal;Baden-Württemberg
+13670;Duisburg-Baerl;Nordrhein-Westfalen
+13674;Waibstadt;Baden-Württemberg
+13675;Hameln-Hastenbeck;Niedersachsen
+13676;Langquaid-Oberschneidhart;Bayern
+13693;Gütersloh/Ems;Nordrhein-Westfalen
+13696;Waltrop-Abdinghof;Nordrhein-Westfalen
+13700;Gevelsberg-Oberbröking;Nordrhein-Westfalen
+13701;Eschwege-Eltmannshausen;Hessen
+13711;Krölpa-Rockendorf;Thüringen
+13713;Meinerzhagen-Redlendorf;Nordrhein-Westfalen
+13777;Helmstedt-Emmerstedt;Niedersachsen
+13900;Soden,Bad-Salmünster (Kläranlage);Hessen
+13901;Haltern (Wasserwerk);Nordrhein-Westfalen
+13932;Rotthalmünster (Landwirtschaftsamt);Bayern
+13952;Arnsberg-Müschede;Nordrhein-Westfalen
+13965;Balingen-Bronnhaupten;Baden-Württemberg
+14138;Falkenberg (Grenzschichtmessfeld);Brandenburg
+15000;Aachen-Orsbach;Nordrhein-Westfalen
+15044;Neuwied-Feldkirchen-Hüllenberg;Rheinland-Pfalz
+15120;Haaren;Nordrhein-Westfalen
+15122;Ergersheim-Neuherberg;Bayern
+15189;Sukow-Levitzow;Mecklenburg-Vorpommern
+15190;Xanten (Wasserwerk);Nordrhein-Westfalen
+15194;Börßum-Achim;Niedersachsen
+15200;Wuppertal;Nordrhein-Westfalen
+15207;Schauenburg-Elgershausen;Hessen
+15214;Halblech-Bayerniederhofen;Bayern
+15444;Ulm-Mähringen;Baden-Württemberg
+15520;Frasdorf-Greimelberg;Bayern
+15547;Heilbronn/Neckar;Baden-Württemberg
+15555;Kaufbeuren-Oberbeuren;Bayern
+15801;Hinterschmiding-Sonndorf;Bayern
+15813;Lingen-Baccum;Niedersachsen
+15911;Großpostwitz-Denkwitz;Sachsen
+15976;Ober-Olm/Bellem;Rheinland-Pfalz
+15978;Sembach;Rheinland-Pfalz
+19171;Hasenkrug-Hardebek;Schleswig-Holstein
+19172;Wacken;Schleswig-Holstein
+19207;Gülzow-Prüzen;Mecklenburg-Vorpommern
+19243;Föhr;Schleswig-Holstein
+19856;Schönau am Königssee;Bayern
+19912;Bichl;Bayern
+20098;Seebach (Nationalpark Schwarzwald);Baden-Württemberg
