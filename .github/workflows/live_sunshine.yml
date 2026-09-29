@@ -1,0 +1,64 @@
+name: DWD Live Sonnenscheindauer
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [live-sunshine-update]
+
+jobs:
+  run-sunshine-map:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Restore Python environment
+        id: python-cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: windows-python-3.12-${{ hashFiles('requirements.txt') }}
+
+      - name: Create Python environment
+        if: steps.python-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+
+      - name: Generate sunshine map
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\python.exe .\live\live_sunshine.py
+
+      - name: Check generated file
+        shell: pwsh
+        run: |
+          Get-ChildItem .\live\output
+
+          if (!(Test-Path .\live\output\sonnenscheindauer.png)) {
+            Write-Error "sonnenscheindauer.png wurde nicht erzeugt."
+          }
+
+      - name: Commit and push PNG
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add .\live\output\sonnenscheindauer.png
+
+          git commit -m "DWD Live-Sonnenscheinkarte aktualisieren" `
+            || Write-Host "Keine Änderungen vorhanden."
+
+          git push
