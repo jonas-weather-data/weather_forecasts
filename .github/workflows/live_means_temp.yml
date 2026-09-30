@@ -1,0 +1,69 @@
+name: DWD Live Extremtemperaturen
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [live-mean-temps-update]
+
+jobs:
+  run-extreme-temperature-maps:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Restore Python environment
+        id: python-cache
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: windows-python-3.12-${{ hashFiles('requirements.txt') }}
+
+      - name: Create Python environment
+        if: steps.python-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          python -m venv .venv
+          .\.venv\Scripts\python.exe -m pip install --upgrade pip
+          .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+
+      - name: Generate extreme temperature maps
+        shell: pwsh
+        run: |
+          .\.venv\Scripts\python.exe .\live\live_means_temp.py
+
+      - name: Check generated files
+        shell: pwsh
+        run: |
+          Get-ChildItem .\live\output
+
+          if (!(Test-Path .\live\output\mittel_temp.png)) {
+            Write-Error "mittel_temp.png wurde nicht erzeugt."
+          }
+
+          if (!(Test-Path .\live\output\mittel_temp_monat.png)) {
+            Write-Error "mittel_temp_monat.png wurde nicht erzeugt."
+          }
+
+      - name: Commit and push PNGs
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add .\live\output\mittel_temp.png
+          git add .\live\output\mittel_temp_monat.png
+
+          git commit -m "DWD Live-Extremtemperaturkarten aktualisieren" `
+            || Write-Host "Keine Änderungen vorhanden."
+
+          git push
