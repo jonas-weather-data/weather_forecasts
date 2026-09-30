@@ -70,7 +70,7 @@ MONTHLY_OUTPUT = os.path.join(
     "mittel_temp_monat.png"
 )
 
-GERMANY_GRID_FACTOR = 1.0028
+GERMANY_GRID_FACTOR = 1.00284
 
 
 # ============================================================
