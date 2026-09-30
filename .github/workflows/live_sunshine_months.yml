@@ -47,7 +47,7 @@ jobs:
           Get-ChildItem .\live\output
 
           if (!(Test-Path .\live\output\sonnenschein_monat.png)) {
-            Write-Error "sonnenscheindauer.png wurde nicht erzeugt."
+            Write-Error "sonnenschein_monat.png wurde nicht erzeugt."
           }
 
       - name: Commit and push PNG
@@ -56,7 +56,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add .\live\output\sonnenscheindauer.png
+          git add .\live\output\sonnenschein_monat.png
 
           git commit -m "DWD Live-Sonnenscheinkarte aktualisieren" `
             || Write-Host "Keine Änderungen vorhanden."
