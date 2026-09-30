@@ -65,4 +65,4 @@ jobs:
           git commit -m "DWD Sommer- und Hitzetage-Karten aktualisieren" `
             || Write-Host "Keine Änderungen vorhanden."
 
-          git push
+          git push --force origin HEAD:main
