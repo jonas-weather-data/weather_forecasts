@@ -299,7 +299,7 @@ public class TempDiagramService
         var legend = new Legend
         {
             LegendPlacement = LegendPlacement.Inside,
-            LegendPosition = LegendPosition.BottomLeft,
+            LegendPosition = LegendPosition.TopRight,
             LegendOrientation = LegendOrientation.Vertical,
             Font = "Segoe UI Bold",
             FontSize = 64,
