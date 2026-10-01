@@ -46,4 +46,4 @@ jobs:
           git add ./monatsbilanz/output/tmk_monat.png
 
           git commit -m "DWD Monatsbilanz aktualisieren" || echo "Keine Änderungen vorhanden."
-          git push
+          git push --force origin HEAD:main
