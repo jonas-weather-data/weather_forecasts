@@ -66,4 +66,4 @@ jobs:
           git commit -m "DWD Live-Extremtemperaturkarten aktualisieren" `
             || Write-Host "Keine Änderungen vorhanden."
 
-          git push
+          git push --force origin HEAD:main
