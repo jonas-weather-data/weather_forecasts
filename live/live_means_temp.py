@@ -678,15 +678,18 @@ def process_station(
 
     try:
 
-        historical = read_daily_file(
-            station_id,
-            daily_filename,
-            month_start,
-            yesterday
-        )
+        if month_start > yesterday:
+            historical = {}
+        else:
+            historical = read_daily_file(
+                station_id,
+                daily_filename,
+                month_start,
+                yesterday
+            )
 
-        if not historical:
-            raise RuntimeError(
+            if historical is None:
+                raise RuntimeError(
                 "Keine historischen TMK-Werte gefunden"
             )
 
