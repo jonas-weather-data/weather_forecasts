@@ -61,4 +61,4 @@ jobs:
           git commit -m "DWD Live-Sonnenscheinkarte aktualisieren" `
             || Write-Host "Keine Änderungen vorhanden."
 
-          git push
+          git push --force origin HEAD:main
