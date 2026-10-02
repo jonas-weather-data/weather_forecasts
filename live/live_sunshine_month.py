@@ -4,45 +4,43 @@
 # Stationen ausschließlich aus:
 #     stationen_extreme.csv
 #
-# Vortage:
+# DATENQUELLEN / LOGIK
+#
+# 1. Alle Tage VOR dem Vortag:
+#
 #     DWD daily/kl/recent/
 #     Parameter SDK
 #
-# AKTUELLSTER VERFÜGBARER TAG:
-#     DWD 10_minutes/solar/now/
-#     Parameter SD_10
+# 2. Vortag:
+#
+#     Zuerst wird geprüft, ob die fertigen daily/kl-Daten
+#     für den Vortag bereits veröffentlicht wurden.
+#
+#     Falls JA:
+#         SDK aus daily/kl/recent/
+#
+#     Falls NEIN:
+#         SD_10 aus solar/now/
+#
+# 3. Laufender Tag:
+#
+#     Immer SD_10 aus solar/now/
 #
 # WICHTIG:
-#     DWD "now/" enthält bei diesem Datensatz nicht zwingend
-#     den aktuellen Kalendertag. Die Daten werden laut DWD
-#     rollierend für den Vortag bereitgestellt.
 #
-# Deshalb wird NICHT mehr:
+# Die DWD daily/kl/recent-Daten des Vortages werden erst
+# später am Vormittag veröffentlicht. Deshalb darf das Fehlen
+# dieser Daten NICHT dazu führen, dass der Vortag aus der
+# Monatskarte verschwindet.
 #
-#     "heute suchen"
+# Für den Vortag genügt eine Prüfung anhand einer Station,
+# da die DWD-Tagesdateien für die Stationen gleichzeitig
+# veröffentlicht werden.
 #
-# erzwungen.
+# solar/now/ wird nach lokalen Kalendertagen ausgewertet.
+# Dadurch kann sowohl der heutige als auch der gestrige Tag
+# aus SD_10 verwendet werden.
 #
-# Stattdessen wird aus jeder now-Datei automatisch der
-# tatsächlich vorhandene letzte Messtag bestimmt.
-#
-# Monatswert:
-#
-#     SDK aller abgeschlossenen Monatstage
-#     +
-#     SD_10 des neuesten verfügbaren Tages
-#
-# Falls now/ noch nicht den heutigen Tag enthält:
-#
-#     Es wird der letzte verfügbare Tag verwendet.
-#
-# Fehlende einzelne SD_10-Werte:
-#
-#     werden übersprungen.
-#
-# Eine Station wird nur verworfen, wenn überhaupt keine
-# verwertbaren SD_10-Werte für den verfügbaren Tag vorhanden
-# sind.
 # ============================================================
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -123,7 +121,7 @@ REQUEST_TIMEOUT = 120
 HTTP = requests.Session()
 
 HTTP.headers.update({
-    "User-Agent": "DWD-Sunshine-Monthly-Map/2.0"
+    "User-Agent": "DWD-Sunshine-Monthly-Map/3.0"
 })
 
 LOCK = threading.Lock()
@@ -512,7 +510,7 @@ def read_daily_sunshine_file(
     station_id,
     filename,
     month_start,
-    last_completed_day
+    end_date
 ):
 
     url = (
@@ -546,7 +544,6 @@ def read_daily_sunshine_file(
 
         if txt_entry is None:
 
-            # Fallback: erste TXT-Datei
             txt_entry = next(
                 (
                     info
@@ -610,7 +607,7 @@ def read_daily_sunshine_file(
 
     df = df[
         (df["MESS_DATUM"].dt.date >= month_start)
-        & (df["MESS_DATUM"].dt.date <= last_completed_day)
+        & (df["MESS_DATUM"].dt.date <= end_date)
     ].copy()
 
     df = df.dropna(
@@ -636,16 +633,84 @@ def read_daily_sunshine_file(
 
 
 # ============================================================
+# PRÜFEN, OB DAILY-DATEN FÜR DEN VORTAG VERFÜGBAR SIND
+#
+# Es genügt eine Station.
+#
+# Wichtig:
+# Die Prüfung erfolgt tatsächlich anhand des Inhalts der
+# ZIP-Datei und nicht nur anhand des Dateinamens.
+# ============================================================
+
+def daily_contains_date(
+    station_id,
+    filename,
+    target_date
+):
+
+    try:
+
+        values = read_daily_sunshine_file(
+            station_id,
+            filename,
+            target_date,
+            target_date
+        )
+
+        if target_date in values:
+
+            log(
+                "daily/kl enthält den Vortag "
+                + target_date.strftime(
+                    "%d.%m.%Y"
+                )
+            )
+
+            return True
+
+        log(
+            "daily/kl-Datei vorhanden, aber der Vortag "
+            + target_date.strftime(
+                "%d.%m.%Y"
+            )
+            + " ist noch nicht enthalten."
+        )
+
+        return False
+
+    except Exception as exc:
+
+        log(
+            "Prüfung daily/kl für den Vortag "
+            f"fehlgeschlagen: {exc}"
+        )
+
+        return False
+
+
+# ============================================================
 # SOLAR-NOW DATEI EINLESEN
 #
-# WICHTIG:
+# NEU:
 #
-# Wir suchen NICHT nach "heute".
+# Nicht mehr nur den neuesten Tag zurückgeben.
 #
-# Wir lesen alle vorhandenen SD_10-Daten und bestimmen daraus
-# automatisch den neuesten tatsächlich vorhandenen Tag.
+# Stattdessen werden ALLE in der now-Datei vorhandenen
+# SD_10-Werte nach lokalem Kalendertag gruppiert.
 #
-# DWD now-Daten sind UTC.
+# Ergebnis:
+#
+# {
+#     date(2026, 10, 2): {
+#         "sunshine_hours": ...,
+#         "data_until": ...,
+#         "valid_values": ...
+#     },
+#     date(2026, 10, 1): {
+#         ...
+#     }
+# }
+#
 # ============================================================
 
 def read_solar_now_file(
@@ -778,8 +843,6 @@ def read_solar_now_file(
                     fields[5]
                 )
 
-                # Fehlwerte werden NICHT als Stationsfehler
-                # behandelt.
                 if sd10 is None:
                     continue
 
@@ -807,10 +870,6 @@ def read_solar_now_file(
         key=lambda x: x[0]
     )
 
-    # --------------------------------------------------------
-    # Nach lokalem Kalendertag gruppieren.
-    # --------------------------------------------------------
-
     by_date = {}
 
     for timestamp, sunshine in rows:
@@ -827,56 +886,31 @@ def read_solar_now_file(
             )
         )
 
-    if not by_date:
+    result = {}
 
-        raise RuntimeError(
-            "Keine verwertbaren Tagesdaten."
+    for d, day_rows in by_date.items():
+
+        day_rows.sort(
+            key=lambda x: x[0]
         )
 
-    # --------------------------------------------------------
-    # Der neueste tatsächlich vorhandene Tag.
-    # --------------------------------------------------------
+        result[d] = {
 
-    latest_date = max(
-        by_date
-    )
+            "sunshine_hours":
+                sum(
+                    sunshine
+                    for _, sunshine
+                    in day_rows
+                ),
 
-    latest_rows = (
-        by_date[
-            latest_date
-        ]
-    )
+            "data_until":
+                day_rows[-1][0],
 
-    latest_rows.sort(
-        key=lambda x: x[0]
-    )
+            "valid_values":
+                len(day_rows)
+        }
 
-    sunshine_hours = sum(
-        sunshine
-        for _, sunshine
-        in latest_rows
-    )
-
-    data_until = (
-        latest_rows[-1][0]
-    )
-
-    return {
-        "station_id":
-            station_id,
-
-        "date":
-            latest_date,
-
-        "sunshine_hours":
-            sunshine_hours,
-
-        "data_until":
-            data_until,
-
-        "valid_values":
-            len(latest_rows)
-    }
+    return result
 
 
 # ============================================================
@@ -888,109 +922,210 @@ def process_station(
     daily_filename,
     solar_filename,
     month_start,
-    target_date
+    today,
+    yesterday,
+    daily_yesterday_available
 ):
 
     try:
 
         # ====================================================
-        # 1. SOLAR-NOW EINLESEN
+        # SOLAR-NOW
         # ====================================================
 
-        now_result = (
+        solar_days = (
             read_solar_now_file(
                 station_id,
                 solar_filename
             )
         )
 
-        latest_solar_date = (
-            now_result["date"]
-        )
+        # ====================================================
+        # HISTORISCHE DAILY-DATEN
+        #
+        # Nur Tage VOR dem Vortag.
+        #
+        # Der Vortag wird separat behandelt, weil dort der
+        # Fallback auf SD_10 erforderlich ist.
+        # ====================================================
 
-        today = target_date
-
-        yesterday = (
-            today
+        historical_end = (
+            yesterday
             - timedelta(days=1)
         )
 
-        # ====================================================
-        # 2. HISTORISCHE TAGESWERTE
-        #
-        # Alles bis einschließlich gestern.
-        #
-        # Aber nur bis zum tatsächlich verfügbaren
-        # Solar-Tag davor.
-        # ====================================================
+        historical = {}
 
-        historical_end = min(
-            yesterday,
-            latest_solar_date
-            - timedelta(days=1)
-        )
+        if historical_end >= month_start:
 
-        historical = (
-            read_daily_sunshine_file(
-                station_id,
-                daily_filename,
-                month_start,
-                historical_end
+            historical = (
+                read_daily_sunshine_file(
+                    station_id,
+                    daily_filename,
+                    month_start,
+                    historical_end
+                )
             )
-        )
 
         # ====================================================
-        # 3. FALL:
+        # VORTAG
         #
-        # Solar-now enthält einen Tag innerhalb des
-        # aktuellen Monats.
+        # Priorität:
+        #
+        # 1. daily SDK, falls global verfügbar
+        # 2. solar-now SD_10 als Fallback
         # ====================================================
+
+        yesterday_value = None
+        yesterday_source = None
+        yesterday_data_until = None
+
+        if daily_yesterday_available:
+
+            daily_yesterday = (
+                read_daily_sunshine_file(
+                    station_id,
+                    daily_filename,
+                    yesterday,
+                    yesterday
+                )
+            )
+
+            if yesterday in daily_yesterday:
+
+                yesterday_value = (
+                    daily_yesterday[
+                        yesterday
+                    ]
+                )
+
+                yesterday_source = "SDK"
+                yesterday_data_until = None
 
         if (
-            latest_solar_date
-            >= month_start
+            yesterday_value is None
+            and yesterday in solar_days
         ):
 
-            current_value = (
-                now_result[
+            yesterday_value = (
+                solar_days[
+                    yesterday
+                ][
                     "sunshine_hours"
                 ]
             )
 
-            current_date = (
-                latest_solar_date
+            yesterday_source = "SD_10"
+
+            yesterday_data_until = (
+                solar_days[
+                    yesterday
+                ][
+                    "data_until"
+                ]
             )
 
-        else:
+        # ====================================================
+        # HEUTE
+        #
+        # Immer SD_10.
+        #
+        # Falls solar/now heute noch nicht enthält, wird
+        # heute noch nicht in die Summe aufgenommen.
+        #
+        # Das ist korrekt: Es dürfen keine Tageswerte
+        # erfunden werden.
+        # ====================================================
 
-            current_value = 0.0
-            current_date = None
+        today_value = None
+        today_data_until = None
+
+        if today in solar_days:
+
+            today_value = (
+                solar_days[
+                    today
+                ][
+                    "sunshine_hours"
+                ]
+            )
+
+            today_data_until = (
+                solar_days[
+                    today
+                ][
+                    "data_until"
+                ]
+            )
 
         # ====================================================
-        # 4. MONATSSUMME
+        # MONATSSUMME
         # ====================================================
 
-        historical_sum = sum(
+        monthly_sum = sum(
             historical.values()
         )
 
-        monthly_sum = (
-            historical_sum
-            + current_value
-        )
+        if yesterday_value is not None:
+
+            monthly_sum += (
+                yesterday_value
+            )
+
+        if today_value is not None:
+
+            monthly_sum += (
+                today_value
+            )
 
         # ====================================================
-        # 5. Wenn latest_solar_date vor dem Monatsbeginn
-        # liegt, muss wenigstens SDK vorhanden sein.
+        # MINDESTENS EIN MONATSWERT MUSS VORHANDEN SEIN
         # ====================================================
 
         if (
             not historical
-            and current_date is None
+            and yesterday_value is None
+            and today_value is None
         ):
 
             raise RuntimeError(
                 "Keine verwertbaren Monatsdaten."
+            )
+
+        # ====================================================
+        # GLOBALEN DATENSTAND ERMITTELN
+        # ====================================================
+
+        data_until_candidates = []
+
+        if (
+            today_data_until is not None
+        ):
+
+            data_until_candidates.append(
+                today_data_until
+            )
+
+        if (
+            yesterday_data_until is not None
+        ):
+
+            data_until_candidates.append(
+                yesterday_data_until
+            )
+
+        if data_until_candidates:
+
+            data_until = max(
+                data_until_candidates
+            )
+
+        else:
+
+            data_until = pd.Timestamp(
+                today
+            ).tz_localize(
+                "Europe/Berlin"
             )
 
         return {
@@ -1002,22 +1137,34 @@ def process_station(
                 monthly_sum,
 
             "historical_sum":
-                historical_sum,
+                sum(
+                    historical.values()
+                ),
 
-            "current_day":
-                current_date,
+            "yesterday_sunshine":
+                yesterday_value,
+
+            "yesterday_source":
+                yesterday_source,
+
+            "today_sunshine":
+                today_value,
 
             "current_sunshine":
-                current_value,
+                today_value,
+
+            "today_source":
+                (
+                    "SD_10"
+                    if today_value is not None
+                    else None
+                ),
 
             "historical_days":
                 len(historical),
 
             "data_until":
-                now_result["data_until"],
-
-            "solar_valid_values":
-                now_result["valid_values"]
+                data_until
         }
 
     except Exception as exc:
@@ -1038,7 +1185,9 @@ def process_all_stations(
     daily_files,
     solar_files,
     month_start,
-    target_date
+    today,
+    yesterday,
+    daily_yesterday_available
 ):
 
     log(
@@ -1089,7 +1238,9 @@ def process_all_stations(
                 daily_files[station_id],
                 solar_files[station_id],
                 month_start,
-                target_date
+                today,
+                yesterday,
+                daily_yesterday_available
             )
 
             futures[future] = station_id
@@ -1199,14 +1350,24 @@ def create_geodata(
                     "historical_sum"
                 ],
 
+            "yesterday_sunshine":
+                result[
+                    "yesterday_sunshine"
+                ],
+
+            "yesterday_source":
+                result[
+                    "yesterday_source"
+                ],
+
             "current_sunshine":
                 result[
                     "current_sunshine"
                 ],
 
-            "current_day":
+            "today_source":
                 result[
-                    "current_day"
+                    "today_source"
                 ],
 
             "historical_days":
@@ -1272,7 +1433,12 @@ def calculate_germany_month_mean(
 
 
 # ============================================================
-# HEUTIGER / AKTUELLER SOLARWERT
+# AKTUELLER TAGESWERT
+#
+# Jetzt wirklich:
+#     HEUTE
+#
+# und nicht mehr pauschal der neueste Tag aus now/.
 # ============================================================
 
 def calculate_current_mean(
@@ -1554,7 +1720,7 @@ def draw_monthly_summary(
     ax.text(
         0.0,
         0.775,
-        "Letzter Tag:",
+        "Heute:",
         transform=ax.transAxes,
         fontsize=8.5,
         fontweight="bold",
@@ -1855,7 +2021,63 @@ def main():
     )
 
     # ========================================================
-    # 5. STATIONEN BERECHNEN
+    # 5. PRÜFEN, OB DAILY DEN VORTAG ENTHÄLT
+    #
+    # Eine einzige Station genügt.
+    # ========================================================
+
+    daily_yesterday_available = False
+
+    if (
+        yesterday >= month_start
+        and daily_files
+    ):
+
+        check_station = next(
+            iter(
+                sorted(
+                    daily_files
+                )
+            )
+        )
+
+        log(
+            "Prüfe anhand Station "
+            f"{check_station}, ob daily/kl den "
+            "Vortag bereits enthält ..."
+        )
+
+        daily_yesterday_available = (
+            daily_contains_date(
+                check_station,
+                daily_files[
+                    check_station
+                ],
+                yesterday
+            )
+        )
+
+    else:
+
+        log(
+            "Keine Prüfung des Vortags erforderlich."
+        )
+
+    if daily_yesterday_available:
+
+        log(
+            "VORTAG: fertige SDK-Daten werden verwendet."
+        )
+
+    else:
+
+        log(
+            "VORTAG: daily/kl noch nicht verfügbar – "
+            "Fallback auf SD_10."
+        )
+
+    # ========================================================
+    # 6. STATIONEN BERECHNEN
     # ========================================================
 
     results = (
@@ -1864,12 +2086,14 @@ def main():
             daily_files,
             solar_files,
             month_start,
-            today
+            today,
+            yesterday,
+            daily_yesterday_available
         )
     )
 
     # ========================================================
-    # 6. GEODATEN
+    # 7. GEODATEN
     # ========================================================
 
     log(
@@ -1888,7 +2112,32 @@ def main():
     )
 
     # ========================================================
-    # 7. GLOBALER DATENSTAND
+    # 8. INFORMATIONSLOG: VORTAGSQUELLEN
+    # ========================================================
+
+    yesterday_sources = (
+        gdf[
+            "yesterday_source"
+        ]
+        .value_counts(
+            dropna=False
+        )
+    )
+
+    log(
+        "Quellen für den Vortag:"
+    )
+
+    for source, count in (
+        yesterday_sources.items()
+    ):
+
+        log(
+            f"  {source}: {count} Stationen"
+        )
+
+    # ========================================================
+    # 9. GLOBALER DATENSTAND
     # ========================================================
 
     data_until_counts = (
@@ -1918,7 +2167,7 @@ def main():
     )
 
     # ========================================================
-    # 8. DEUTSCHLAND-MONATSMITTEL
+    # 10. DEUTSCHLAND-MONATSMITTEL
     # ========================================================
 
     germany_month_mean = (
@@ -1934,7 +2183,7 @@ def main():
     )
 
     # ========================================================
-    # 9. LETZTER SOLAR-TAGESWERT
+    # 11. HEUTIGER SOLAR-TAGESWERT
     # ========================================================
 
     current_mean = (
@@ -1946,12 +2195,19 @@ def main():
     if current_mean is not None:
 
         log(
-            "Deutschland-Mittel letzter "
-            f"Solar-Tag: {current_mean:.3f} h"
+            "Deutschland-Mittel heute: "
+            f"{current_mean:.3f} h"
+        )
+
+    else:
+
+        log(
+            "Für heute sind noch keine "
+            "SD_10-Werte verfügbar."
         )
 
     # ========================================================
-    # 10. ERSTELLUNGSZEIT
+    # 12. ERSTELLUNGSZEIT
     # ========================================================
 
     created_at = (
@@ -1965,7 +2221,7 @@ def main():
     )
 
     # ========================================================
-    # 11. DEUTSCHLAND-GEOMETRIE
+    # 13. DEUTSCHLAND-GEOMETRIE
     # ========================================================
 
     log(
@@ -1977,7 +2233,7 @@ def main():
     )
 
     # ========================================================
-    # 12. KARTE
+    # 14. KARTE
     # ========================================================
 
     plot_sunshine_map(
