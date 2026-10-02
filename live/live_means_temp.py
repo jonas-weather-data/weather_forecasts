@@ -4,20 +4,58 @@
 # Stationen ausschließlich aus:
 #     stationen_extreme.csv
 #
-# Vergangene Tage:
+# DATENLOGIK
+# ------------------------------------------------------------
+#
+# 1. Abgeschlossene Tage VOR GESTERN:
+#
 #     DWD daily/kl/recent/
+#     fertige TMK-Tagesmittel
 #
-# Laufender Tag:
-#     DWD 10_minutes/air_temperature/now/
+# 2. GESTERN:
 #
-# Deutschland-Tagesmittel:
-#     Mittelwert der Stations-Tagesmittel
+#     Es wird EINMAL zentral geprüft, ob der fertige
+#     Tageswert in daily/kl/recent/ bereits veröffentlicht
+#     wurde.
+#
+#     Falls JA:
+#         -> TMK aus daily/kl/recent/
+#
+#     Falls NEIN:
+#         -> 10-Minuten-Daten aus
+#            10_minutes/air_temperature/recent/
+#            werden zu einem Tagesmittel aggregiert.
+#
+# 3. HEUTE:
+#
+#     Immer:
+#
+#         10_minutes/air_temperature/now/
+#
+#     Das Tagesmittel wird aus den bis jetzt vorhandenen
+#     TT_10-Werten berechnet.
+#
+# ------------------------------------------------------------
+#
+# MONATSMITTEL
+#
+# Für jede Station:
+#
+#     Summe abgeschlossene Tagesmittel
+#     +
+#     heutiges Tagesmittel * Tagesanteil
+#
+# anschließend geteilt durch:
+#
+#     Anzahl abgeschlossener Tage
+#     +
+#     Tagesanteil heute
+#
+# Deutschland:
+#
+#     Mittelwert der Stations-Monatsmittel
 #     * GERMANY_GRID_FACTOR
 #
-# Deutschland-Monatsmittel:
-#     Wird vollständig aus den Stationsdaten berechnet.
-#
-# Es wird KEIN vorgegebenes Deutschland-Monatsmittel verwendet.
 # ============================================================
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -30,7 +68,6 @@ import time
 import zipfile
 
 import geopandas as gpd
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -94,6 +131,12 @@ AIR_TEMPERATURE_NOW_URL = (
     "air_temperature/now/"
 )
 
+AIR_TEMPERATURE_RECENT_URL = (
+    "https://opendata.dwd.de/climate_environment/CDC/"
+    "observations_germany/climate/10_minutes/"
+    "air_temperature/recent/"
+)
+
 
 # ============================================================
 # TECHNIK
@@ -105,7 +148,7 @@ REQUEST_TIMEOUT = 120
 HTTP = requests.Session()
 
 HTTP.headers.update({
-    "User-Agent": "DWD-Temperature-Maps/1.0"
+    "User-Agent": "DWD-Temperature-Maps/2.0"
 })
 
 LOCK = threading.Lock()
@@ -117,6 +160,7 @@ PROGRESS = 0
 # ============================================================
 
 def log(message):
+
     print(
         f"[{time.strftime('%H:%M:%S')}] {message}",
         flush=True
@@ -128,6 +172,7 @@ def log(message):
 # ============================================================
 
 def get(url):
+
     response = HTTP.get(
         url,
         timeout=REQUEST_TIMEOUT
@@ -144,9 +189,14 @@ def get(url):
 
 def load_station_list():
 
-    log("Lade stationen_extreme.csv ...")
+    log(
+        "Lade stationen_extreme.csv ..."
+    )
 
-    if not os.path.exists(STATION_LIST):
+    if not os.path.exists(
+        STATION_LIST
+    ):
+
         raise FileNotFoundError(
             f"Datei nicht gefunden: {STATION_LIST}"
         )
@@ -170,9 +220,13 @@ def load_station_list():
         "bundesland"
     }
 
-    missing = required - set(df.columns)
+    missing = (
+        required
+        - set(df.columns)
+    )
 
     if missing:
+
         raise ValueError(
             "Fehlende Spalten in stationen_extreme.csv: "
             + ", ".join(sorted(missing))
@@ -194,10 +248,14 @@ def load_station_list():
         .str.zfill(5)
     )
 
-    df["name"] = df["name"].str.strip()
+    df["name"] = (
+        df["name"]
+        .str.strip()
+    )
 
     df["bundesland"] = (
-        df["bundesland"].str.strip()
+        df["bundesland"]
+        .str.strip()
     )
 
     df = df[
@@ -221,16 +279,22 @@ def load_station_list():
 # STATIONSKOORDINATEN VOM DWD
 # ============================================================
 
-def load_station_meta(station_ids):
+def load_station_meta(
+    station_ids
+):
 
-    log("Lade DWD-Stationskoordinaten ...")
+    log(
+        "Lade DWD-Stationskoordinaten ..."
+    )
 
     station_ids = {
         str(x).zfill(5)
         for x in station_ids
     }
 
-    response = get(STATIONS_URL)
+    response = get(
+        STATIONS_URL
+    )
 
     txt = response.content.decode(
         "cp1252",
@@ -246,18 +310,25 @@ def load_station_meta(station_ids):
     header_index = None
 
     for i, line in enumerate(lines):
-        if line.startswith("Stations_id"):
+
+        if line.startswith(
+            "Stations_id"
+        ):
+
             header_index = i
             break
 
     if header_index is None:
+
         raise RuntimeError(
             "Stations_id-Header nicht gefunden."
         )
 
     result = {}
 
-    for line in lines[header_index + 1:]:
+    for line in lines[
+        header_index + 1:
+    ]:
 
         if len(line) < 60:
             continue
@@ -272,6 +343,7 @@ def load_station_meta(station_ids):
             continue
 
         try:
+
             lat = float(
                 line[43:50]
                 .strip()
@@ -285,6 +357,7 @@ def load_station_meta(station_ids):
             )
 
         except ValueError:
+
             continue
 
         result[sid] = {
@@ -292,12 +365,19 @@ def load_station_meta(station_ids):
             "lon": lon
         }
 
-        if len(result) == len(station_ids):
+        if len(result) == len(
+            station_ids
+        ):
+
             break
 
-    missing = station_ids - set(result)
+    missing = (
+        station_ids
+        - set(result)
+    )
 
     if missing:
+
         log(
             "WARNUNG: Keine Koordinaten für: "
             + ", ".join(sorted(missing))
@@ -312,14 +392,20 @@ def load_station_meta(station_ids):
 
 
 # ============================================================
-# DATEIEN AUS DWD DAILY/RECENT
+# DAILY/RECENT DATEIEN
 # ============================================================
 
-def get_daily_files(station_ids):
+def get_daily_files(
+    station_ids
+):
 
-    log("Lade DWD-Dateiliste für Tageswerte ...")
+    log(
+        "Lade DWD-Dateiliste für Tageswerte ..."
+    )
 
-    response = get(DAILY_RECENT_URL)
+    response = get(
+        DAILY_RECENT_URL
+    )
 
     matches = re.findall(
         r'href="([^"]+\.zip)"',
@@ -345,7 +431,10 @@ def get_daily_files(station_ids):
         if not match:
             continue
 
-        sid = match.group(1)
+        sid = (
+            match.group(1)
+            .zfill(5)
+        )
 
         if sid not in station_ids:
             continue
@@ -360,14 +449,16 @@ def get_daily_files(station_ids):
 
 
 # ============================================================
-# DATEIEN AUS DWD 10-MINUTEN/NOW
+# 10-MINUTEN NOW DATEIEN
 # ============================================================
 
-def get_air_temperature_files(station_ids):
+def get_air_temperature_now_files(
+    station_ids
+):
 
     log(
         "Lade DWD-Dateiliste für "
-        "10-Minuten-Lufttemperatur ..."
+        "10-Minuten-Lufttemperatur now ..."
     )
 
     response = get(
@@ -398,7 +489,10 @@ def get_air_temperature_files(station_ids):
         if not match:
             continue
 
-        sid = match.group(1)
+        sid = (
+            match.group(1)
+            .zfill(5)
+        )
 
         if sid not in station_ids:
             continue
@@ -407,24 +501,255 @@ def get_air_temperature_files(station_ids):
 
     log(
         f"{len(files)} relevante "
-        "10-Minuten-Dateien gefunden"
+        "10-Minuten-now-Dateien gefunden"
     )
 
     return files
 
 
 # ============================================================
-# DWD-TAGESDATEI EINLESEN
+# 10-MINUTEN RECENT DATEIEN
+#
+# Wird NUR benötigt, solange der Vortag noch nicht als
+# fertiges Tagesmittel verfügbar ist.
+# ============================================================
+
+def get_air_temperature_recent_files(
+    station_ids
+):
+
+    log(
+        "Lade DWD-Dateiliste für "
+        "10-Minuten-Lufttemperatur recent ..."
+    )
+
+    response = get(
+        AIR_TEMPERATURE_RECENT_URL
+    )
+
+    matches = re.findall(
+        r'href="([^"]+\.zip)"',
+        response.text,
+        flags=re.IGNORECASE
+    )
+
+    station_ids = {
+        str(x).zfill(5)
+        for x in station_ids
+    }
+
+    files = {}
+
+    for filename in matches:
+
+        match = re.search(
+            r"10minutenwerte_TU_(\d{5})_",
+            filename,
+            flags=re.IGNORECASE
+        )
+
+        if not match:
+            continue
+
+        sid = (
+            match.group(1)
+            .zfill(5)
+        )
+
+        if sid not in station_ids:
+            continue
+
+        files[sid] = filename
+
+    log(
+        f"{len(files)} relevante "
+        "10-Minuten-recent-Dateien gefunden"
+    )
+
+    return files
+
+
+# ============================================================
+# PRÜFUNG:
+#
+# IST GESTERN BEREITS ALS FERTIGES TMK VERFÜGBAR?
+#
+# Es genügt eine Station.
+#
+# Wir nehmen die erste vorhandene Tagesdatei und prüfen,
+# ob gestern darin als verwertbarer TMK-Wert enthalten ist.
+# ============================================================
+
+def check_yesterday_daily_available(
+    daily_files,
+    yesterday
+):
+
+    if not daily_files:
+
+        log(
+            "Keine daily/recent-Dateien vorhanden."
+        )
+
+        return False
+
+    # Eine beliebige vorhandene Station.
+    station_id = sorted(
+        daily_files
+    )[0]
+
+    filename = daily_files[
+        station_id
+    ]
+
+    log(
+        "Prüfe fertigen DWD-Tageswert für "
+        f"{yesterday.strftime('%d.%m.%Y')} "
+        f"an Station {station_id} ..."
+    )
+
+    try:
+
+        url = (
+            DAILY_RECENT_URL
+            + filename
+        )
+
+        response = get(url)
+
+        with zipfile.ZipFile(
+            BytesIO(response.content)
+        ) as archive:
+
+            txt_file = None
+
+            for name in archive.namelist():
+
+                base = os.path.basename(
+                    name
+                ).lower()
+
+                if (
+                    base.startswith(
+                        "produkt_klima_tag"
+                    )
+                    and base.endswith(".txt")
+                ):
+
+                    txt_file = name
+                    break
+
+            if txt_file is None:
+
+                raise RuntimeError(
+                    "Keine Tageswert-TXT gefunden."
+                )
+
+            with archive.open(
+                txt_file
+            ) as stream:
+
+                df = pd.read_csv(
+                    stream,
+                    sep=";",
+                    encoding="cp1252",
+                    dtype=str
+                )
+
+        df.columns = [
+            str(c).strip()
+            for c in df.columns
+        ]
+
+        if (
+            "MESS_DATUM"
+            not in df.columns
+        ):
+
+            raise RuntimeError(
+                "MESS_DATUM fehlt."
+            )
+
+        if "TMK" not in df.columns:
+
+            raise RuntimeError(
+                "TMK fehlt."
+            )
+
+        df["MESS_DATUM"] = pd.to_datetime(
+            df["MESS_DATUM"],
+            format="%Y%m%d",
+            errors="coerce"
+        )
+
+        df["TMK"] = pd.to_numeric(
+            df["TMK"],
+            errors="coerce"
+        )
+
+        df.loc[
+            df["TMK"] <= -999,
+            "TMK"
+        ] = np.nan
+
+        row = df[
+            df["MESS_DATUM"].dt.date
+            == yesterday
+        ]
+
+        row = row.dropna(
+            subset=["TMK"]
+        )
+
+        available = not row.empty
+
+        if available:
+
+            log(
+                "Gestern ist bereits als "
+                "fertiges TMK verfügbar."
+            )
+
+        else:
+
+            log(
+                "Gestern ist noch NICHT als "
+                "fertiges TMK verfügbar."
+            )
+
+        return available
+
+    except Exception as exc:
+
+        log(
+            "Prüfung des fertigen Vortagswertes "
+            f"fehlgeschlagen: {exc}"
+        )
+
+        return False
+
+
+# ============================================================
+# DAILY-DATEI EINLESEN
+#
+# Liefert TMK-Werte für alle angeforderten Tage.
 # ============================================================
 
 def read_daily_file(
     station_id,
     filename,
-    month_start,
-    yesterday
+    start_date,
+    end_date
 ):
 
-    url = DAILY_RECENT_URL + filename
+    if start_date > end_date:
+
+        return {}
+
+    url = (
+        DAILY_RECENT_URL
+        + filename
+    )
 
     response = get(url)
 
@@ -432,7 +757,7 @@ def read_daily_file(
         BytesIO(response.content)
     ) as archive:
 
-        csv_file = None
+        txt_file = None
 
         for name in archive.namelist():
 
@@ -441,18 +766,24 @@ def read_daily_file(
             ).lower()
 
             if (
-                base.startswith("produkt_klima_tag")
+                base.startswith(
+                    "produkt_klima_tag"
+                )
                 and base.endswith(".txt")
             ):
-                csv_file = name
+
+                txt_file = name
                 break
 
-        if csv_file is None:
+        if txt_file is None:
+
             raise RuntimeError(
                 f"Keine Tageswert-TXT in {filename}"
             )
 
-        with archive.open(csv_file) as stream:
+        with archive.open(
+            txt_file
+        ) as stream:
 
             df = pd.read_csv(
                 stream,
@@ -467,11 +798,13 @@ def read_daily_file(
     ]
 
     if "MESS_DATUM" not in df.columns:
+
         raise RuntimeError(
             f"MESS_DATUM fehlt in {filename}"
         )
 
     if "TMK" not in df.columns:
+
         raise RuntimeError(
             f"TMK fehlt in {filename}"
         )
@@ -493,41 +826,53 @@ def read_daily_file(
     ] = np.nan
 
     df = df[
-        (df["MESS_DATUM"].dt.date >= month_start)
-        & (df["MESS_DATUM"].dt.date <= yesterday)
+        (df["MESS_DATUM"].dt.date >= start_date)
+        & (df["MESS_DATUM"].dt.date <= end_date)
     ].copy()
 
     df = df.dropna(
         subset=["TMK"]
     )
 
-    if df.empty:
-        return None
-
-    daily_values = {}
+    result = {}
 
     for _, row in df.iterrows():
 
-        d = row["MESS_DATUM"].date()
+        d = row[
+            "MESS_DATUM"
+        ].date()
 
-        daily_values[d] = float(
+        result[d] = float(
             row["TMK"]
         )
 
-    return daily_values if daily_values else None
+    return result
 
 
 # ============================================================
-# LAUFENDER TAG
+# 10-MINUTEN-DATEI EINLESEN
+#
+# Wird für:
+#
+#   - gestern aus recent/
+#   - heute aus now/
+#
+# verwendet.
+#
+# target_date ist der gewünschte lokale Kalendertag.
 # ============================================================
 
-def read_current_day_file(
+def read_10min_file(
+    base_url,
     station_id,
     filename,
     target_date
 ):
 
-    url = AIR_TEMPERATURE_NOW_URL + filename
+    url = (
+        base_url
+        + filename
+    )
 
     response = get(url)
 
@@ -547,17 +892,21 @@ def read_current_day_file(
                 base.endswith(".txt")
                 and base.startswith("produkt_")
             ):
+
                 txt_file = info
                 break
 
         if txt_file is None:
+
             raise RuntimeError(
                 f"Keine Produkt-TXT in {filename}"
             )
 
         rows = []
 
-        with archive.open(txt_file) as stream:
+        with archive.open(
+            txt_file
+        ) as stream:
 
             for raw_line in stream:
 
@@ -569,7 +918,9 @@ def read_current_day_file(
                 if not line:
                     continue
 
-                if line.startswith("STATIONS_ID"):
+                if line.startswith(
+                    "STATIONS_ID"
+                ):
                     continue
 
                 fields = [
@@ -577,16 +928,20 @@ def read_current_day_file(
                     for x in line.split(";")
                 ]
 
-                if len(fields) < 5:
-                    continue
+                if fields and (
+                    fields[-1]
+                    .lower()
+                    == "eor"
+                ):
 
-                if fields[-1].lower() == "eor":
                     fields = fields[:-1]
 
                 if len(fields) < 5:
                     continue
 
-                timestamp_string = fields[1]
+                timestamp_string = (
+                    fields[1]
+                )
 
                 timestamp = None
 
@@ -605,30 +960,42 @@ def read_current_day_file(
 
                         break
 
-                    except ValueError:
+                    except (
+                        ValueError,
+                        TypeError
+                    ):
+
                         pass
 
                 if timestamp is None:
                     continue
 
-                timestamp = timestamp.tz_convert(
-                    "Europe/Berlin"
+                timestamp = (
+                    timestamp
+                    .tz_convert(
+                        "Europe/Berlin"
+                    )
                 )
 
                 if timestamp.date() != target_date:
                     continue
 
                 try:
+
                     temperature = float(
-                        fields[4].replace(",", ".")
+                        fields[4]
+                        .replace(",", ".")
                     )
+
                 except (
                     ValueError,
                     AttributeError
                 ):
+
                     continue
 
                 if temperature <= -999:
+
                     continue
 
                 rows.append(
@@ -639,6 +1006,7 @@ def read_current_day_file(
                 )
 
     if not rows:
+
         return None, None
 
     rows.sort(
@@ -671,30 +1039,112 @@ def process_station(
     station_id,
     daily_filename,
     current_filename,
+    yesterday_filename,
     month_start,
     yesterday,
-    today
+    today,
+    yesterday_daily_available
 ):
 
     try:
 
-        if month_start > yesterday:
-            historical = {}
-        else:
-            historical = read_daily_file(
-                station_id,
-                daily_filename,
-                month_start,
-                yesterday
+        # ====================================================
+        # 1. TAGE VOR GESTERN
+        #
+        # Immer fertige DWD-Tageswerte.
+        # ====================================================
+
+        historical_end = (
+            yesterday
+            - timedelta(days=1)
+        )
+
+        historical = read_daily_file(
+            station_id,
+            daily_filename,
+            month_start,
+            historical_end
+        )
+
+        # ====================================================
+        # 2. GESTERN
+        #
+        # Entweder fertiges TMK oder 10-Minuten-recent.
+        # ====================================================
+
+        yesterday_mean = None
+        yesterday_data_until = None
+
+        if yesterday_daily_available:
+
+            yesterday_values = (
+                read_daily_file(
+                    station_id,
+                    daily_filename,
+                    yesterday,
+                    yesterday
+                )
             )
 
-            if historical is None:
+            yesterday_mean = (
+                yesterday_values.get(
+                    yesterday
+                )
+            )
+
+            if yesterday_mean is None:
+
                 raise RuntimeError(
-                "Keine historischen TMK-Werte gefunden"
+                    "Gestern sollte als TMK "
+                    "verfügbar sein, wurde aber "
+                    "für die Station nicht gefunden."
+                )
+
+            yesterday_data_until = (
+                pd.Timestamp(
+                    yesterday,
+                    tz="Europe/Berlin"
+                )
+                + pd.Timedelta(
+                    hours=23,
+                    minutes=59
+                )
             )
 
-        today_mean, data_until = (
-            read_current_day_file(
+        else:
+
+            if yesterday_filename is None:
+
+                raise RuntimeError(
+                    "Keine 10-Minuten-recent-Datei "
+                    "für den Vortag verfügbar."
+                )
+
+            yesterday_mean, yesterday_data_until = (
+                read_10min_file(
+                    AIR_TEMPERATURE_RECENT_URL,
+                    station_id,
+                    yesterday_filename,
+                    yesterday
+                )
+            )
+
+            if yesterday_mean is None:
+
+                raise RuntimeError(
+                    "Keine 10-Minuten-Werte "
+                    "für gestern gefunden."
+                )
+
+        # ====================================================
+        # 3. HEUTE
+        #
+        # Immer 10-Minuten-now.
+        # ====================================================
+
+        today_mean, today_data_until = (
+            read_10min_file(
+                AIR_TEMPERATURE_NOW_URL,
                 station_id,
                 current_filename,
                 today
@@ -702,17 +1152,35 @@ def process_station(
         )
 
         if today_mean is None:
+
             raise RuntimeError(
-                "Kein TT_10-Tagesmittel für heute"
+                "Keine TT_10-Werte für heute."
             )
+
+        # ====================================================
+        # 4. ABGESCHLOSSENE TAGE
+        #
+        # Die historischen Tage + gestern.
+        # ====================================================
 
         historical_sum = sum(
             historical.values()
         )
 
-        completed_days = len(
+        historical_days = len(
             historical
         )
+
+        # Gestern ist ein vollständig abgeschlossener Tag.
+        historical_sum += (
+            yesterday_mean
+        )
+
+        historical_days += 1
+
+        # ====================================================
+        # 5. ANTEIL DES HEUTIGEN TAGES
+        # ====================================================
 
         midnight = pd.Timestamp(
             today,
@@ -720,7 +1188,8 @@ def process_station(
         )
 
         elapsed_seconds = (
-            data_until - midnight
+            today_data_until
+            - midnight
         ).total_seconds()
 
         elapsed_seconds = max(
@@ -736,27 +1205,59 @@ def process_station(
             / (24 * 60 * 60)
         )
 
+        # ====================================================
+        # 6. MONATSMITTEL
+        # ====================================================
+
         denominator = (
-            completed_days
+            historical_days
             + day_fraction
         )
 
         if denominator <= 0:
+
             monthly_mean = None
+
         else:
+
             monthly_mean = (
                 historical_sum
                 + today_mean * day_fraction
             ) / denominator
 
+        # ====================================================
+        # 7. DATENSTAND
+        #
+        # Für die Monatskarte zählt der neueste heute
+        # vorhandene 10-Minuten-Wert.
+        # ====================================================
+
+        data_until = (
+            today_data_until
+        )
+
         return {
-            "station_id": station_id,
-            "daily_mean": today_mean,
-            "monthly_mean": monthly_mean,
-            "historical_sum": historical_sum,
-            "historical_days": completed_days,
-            "day_fraction": day_fraction,
-            "data_until": data_until
+
+            "station_id":
+                station_id,
+
+            "daily_mean":
+                today_mean,
+
+            "monthly_mean":
+                monthly_mean,
+
+            "historical_sum":
+                historical_sum,
+
+            "historical_days":
+                historical_days,
+
+            "day_fraction":
+                day_fraction,
+
+            "data_until":
+                data_until
         }
 
     except Exception as exc:
@@ -769,19 +1270,23 @@ def process_station(
 
 
 # ============================================================
-# ALLE STATIONEN VERARBEITEN
+# ALLE STATIONEN
 # ============================================================
 
 def process_all_stations(
     station_list,
     daily_files,
     current_files,
+    yesterday_files,
     month_start,
     yesterday,
-    today
+    today,
+    yesterday_daily_available
 ):
 
-    log("Berechne Stationswerte ...")
+    log(
+        "Berechne Stationswerte ..."
+    )
 
     station_ids = set(
         station_list["station_id"]
@@ -793,10 +1298,23 @@ def process_all_stations(
         & set(current_files)
     )
 
+    if not yesterday_daily_available:
+
+        usable_ids &= set(
+            yesterday_files
+        )
+
     log(
         f"{len(usable_ids)} Stationen besitzen "
-        "sowohl Tages- als auch 10-Minuten-Datei"
+        "alle benötigten Datenquellen"
     )
+
+    if not usable_ids:
+
+        raise RuntimeError(
+            "Keine gemeinsamen Stationen "
+            "mit den benötigten DWD-Dateien."
+        )
 
     results = {}
 
@@ -819,9 +1337,13 @@ def process_all_stations(
                 station_id,
                 daily_files[station_id],
                 current_files[station_id],
+                yesterday_files.get(
+                    station_id
+                ),
                 month_start,
                 yesterday,
-                today
+                today,
+                yesterday_daily_available
             )
 
             futures[future] = station_id
@@ -830,9 +1352,14 @@ def process_all_stations(
             futures
         ):
 
+            station_id = futures[
+                future
+            ]
+
             result = future.result()
 
             with LOCK:
+
                 PROGRESS += 1
 
                 print(
@@ -842,6 +1369,7 @@ def process_all_stations(
                 )
 
             if result is not None:
+
                 results[
                     result["station_id"]
                 ] = result
@@ -849,6 +1377,13 @@ def process_all_stations(
     log(
         f"{len(results)} Stationen erfolgreich ausgewertet"
     )
+
+    if not results:
+
+        raise RuntimeError(
+            "Keine Station konnte erfolgreich "
+            "ausgewertet werden."
+        )
 
     return results
 
@@ -881,30 +1416,58 @@ def create_geodata(
             station_id
         )
 
-        if meta is None or info is None:
+        if (
+            meta is None
+            or info is None
+        ):
             continue
 
         rows.append({
-            "station_id": station_id,
-            "name": info["name"],
-            "bundesland": info["bundesland"],
-            "lat": meta["lat"],
-            "lon": meta["lon"],
-            "daily_mean": result["daily_mean"],
-            "monthly_mean": result["monthly_mean"],
-            "historical_sum": result["historical_sum"],
-            "historical_days": result["historical_days"],
-            "day_fraction": result["day_fraction"],
-            "data_until": result["data_until"]
+
+            "station_id":
+                station_id,
+
+            "name":
+                info["name"],
+
+            "bundesland":
+                info["bundesland"],
+
+            "lat":
+                meta["lat"],
+
+            "lon":
+                meta["lon"],
+
+            "daily_mean":
+                result["daily_mean"],
+
+            "monthly_mean":
+                result["monthly_mean"],
+
+            "historical_sum":
+                result["historical_sum"],
+
+            "historical_days":
+                result["historical_days"],
+
+            "day_fraction":
+                result["day_fraction"],
+
+            "data_until":
+                result["data_until"]
         })
 
     if not rows:
+
         raise RuntimeError(
             "Keine Stationen mit vollständigen "
             "Geodaten verfügbar."
         )
 
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(
+        rows
+    )
 
     geometry = gpd.points_from_xy(
         df["lon"],
@@ -922,7 +1485,9 @@ def create_geodata(
 # DEUTSCHLAND-TAGESMITTEL
 # ============================================================
 
-def calculate_germany_daily_mean(gdf):
+def calculate_germany_daily_mean(
+    gdf
+):
 
     values = pd.to_numeric(
         gdf["daily_mean"],
@@ -930,8 +1495,10 @@ def calculate_germany_daily_mean(gdf):
     ).dropna()
 
     if values.empty:
+
         raise RuntimeError(
-            "Keine gültigen Stations-Tagesmittel vorhanden."
+            "Keine gültigen "
+            "Stations-Tagesmittel vorhanden."
         )
 
     raw_mean = float(
@@ -946,22 +1513,6 @@ def calculate_germany_daily_mean(gdf):
 
 # ============================================================
 # DEUTSCHLAND-MONATSMITTEL
-#
-# KOMPLETT AUS DEN STATIONSDATEN.
-#
-# Für jede Station:
-#
-#   historische_summe
-#   + heutiges_stationsmittel * anteil_heute
-#
-# wird über die Stationen gemittelt.
-#
-# Danach:
-#
-#   * GERMANY_GRID_FACTOR
-#
-# Der laufende Tag wird nur mit seinem tatsächlichen
-# Zeitanteil berücksichtigt.
 # ============================================================
 
 def calculate_germany_month_mean(
@@ -971,6 +1522,7 @@ def calculate_germany_month_mean(
 ):
 
     if gdf.empty:
+
         raise RuntimeError(
             "GeoDataFrame ist leer."
         )
@@ -989,18 +1541,14 @@ def calculate_germany_month_mean(
     )
 
     if missing:
+
         raise RuntimeError(
             "Fehlende Spalten für "
             "Deutschland-Monatsmittel: "
-            + ", ".join(sorted(missing))
+            + ", ".join(
+                sorted(missing)
+            )
         )
-
-    # --------------------------------------------------------
-    # Die Stationswerte werden jeweils mit ihrem eigenen
-    # Datenstand berechnet. Dadurch wird nicht versehentlich
-    # ein globaler "today"-Wert innerhalb der Funktion
-    # vorausgesetzt.
-    # --------------------------------------------------------
 
     valid = gdf[
         gdf["historical_sum"].notna()
@@ -1010,29 +1558,24 @@ def calculate_germany_month_mean(
     ].copy()
 
     if valid.empty:
+
         raise RuntimeError(
             "Keine vollständigen Stationswerte "
             "für das Monatsmittel vorhanden."
         )
-
-    # --------------------------------------------------------
-    # Für jede Station:
-    #
-    # historische_sum
-    # + heutiges Stationsmittel * day_fraction
-    #
-    # --------------------------------------------------------
 
     station_sums = (
         pd.to_numeric(
             valid["historical_sum"],
             errors="coerce"
         )
-        + pd.to_numeric(
+        +
+        pd.to_numeric(
             valid["daily_mean"],
             errors="coerce"
         )
-        * pd.to_numeric(
+        *
+        pd.to_numeric(
             valid["day_fraction"],
             errors="coerce"
         )
@@ -1043,7 +1586,8 @@ def calculate_germany_month_mean(
             valid["historical_days"],
             errors="coerce"
         )
-        + pd.to_numeric(
+        +
+        pd.to_numeric(
             valid["day_fraction"],
             errors="coerce"
         )
@@ -1052,12 +1596,17 @@ def calculate_germany_month_mean(
     valid_values = (
         station_sums.notna()
         & station_denominators.notna()
-        & (station_denominators > 0)
+        & (
+            station_denominators
+            > 0
+        )
     )
 
-    station_sums = station_sums[
-        valid_values
-    ]
+    station_sums = (
+        station_sums[
+            valid_values
+        ]
+    )
 
     station_denominators = (
         station_denominators[
@@ -1066,21 +1615,11 @@ def calculate_germany_month_mean(
     )
 
     if station_sums.empty:
-        raise RuntimeError(
-            "Keine gültigen Stations-Monatswerte."
-        )
 
-    # --------------------------------------------------------
-    # Gemeinsamer Monatsstand:
-    #
-    # Die Stationen haben normalerweise denselben
-    # historischen Tagesbereich. Falls einzelne Stationen
-    # geringfügig andere Datenstände besitzen, wird jede
-    # Station mit ihrem tatsächlich vorhandenen Zeitraum
-    # berücksichtigt.
-    #
-    # Für den normalen Fall sind alle Denominatoren identisch.
-    # --------------------------------------------------------
+        raise RuntimeError(
+            "Keine gültigen "
+            "Stations-Monatswerte."
+        )
 
     station_monthly_means = (
         station_sums
@@ -1130,11 +1669,15 @@ def calculate_label_positions(
 
     positions = xy.copy()
 
-    for _ in range(iterations):
+    for _ in range(
+        iterations
+    ):
 
         moved = False
 
-        for i in range(len(positions)):
+        for i in range(
+            len(positions)
+        ):
 
             for j in range(
                 i + 1,
@@ -1225,7 +1768,9 @@ def calculate_label_positions(
 # TEXTFARBE
 # ============================================================
 
-def temperature_text_color(value):
+def temperature_text_color(
+    value
+):
 
     if value >= 35:
         return "#7f0000"
@@ -1563,6 +2108,7 @@ def plot_temperature_map(
     ].copy()
 
     if valid.empty:
+
         raise RuntimeError(
             f"Keine gültigen Werte für {parameter}"
         )
@@ -1582,10 +2128,13 @@ def plot_temperature_map(
         value = row[parameter]
 
         if index in label_positions:
+
             text_x, text_y = (
                 label_positions[index]
             )
+
         else:
+
             text_x = row.geometry.x
             text_y = row.geometry.y
 
@@ -1673,9 +2222,9 @@ def main():
         exist_ok=True
     )
 
-    # --------------------------------------------------------
+    # ========================================================
     # DATUM / UHRZEIT
-    # --------------------------------------------------------
+    # ========================================================
 
     now = pd.Timestamp.now(
         tz="Europe/Berlin"
@@ -1709,9 +2258,9 @@ def main():
         + month_start.strftime("%d.%m.%Y")
     )
 
-    # --------------------------------------------------------
-    # 1. STATIONEN AUS CSV
-    # --------------------------------------------------------
+    # ========================================================
+    # 1. STATIONEN
+    # ========================================================
 
     station_list = (
         load_station_list()
@@ -1721,9 +2270,9 @@ def main():
         station_list["station_id"]
     )
 
-    # --------------------------------------------------------
+    # ========================================================
     # 2. KOORDINATEN
-    # --------------------------------------------------------
+    # ========================================================
 
     station_meta = (
         load_station_meta(
@@ -1731,9 +2280,9 @@ def main():
         )
     )
 
-    # --------------------------------------------------------
-    # 3. HISTORISCHE TAGESDATEIEN
-    # --------------------------------------------------------
+    # ========================================================
+    # 3. FERTIGE TAGESWERTE
+    # ========================================================
 
     daily_files = (
         get_daily_files(
@@ -1741,38 +2290,75 @@ def main():
         )
     )
 
-    # --------------------------------------------------------
-    # 4. AKTUELLE 10-MINUTEN-DATEIEN
-    # --------------------------------------------------------
+    # ========================================================
+    # 4. 10-MINUTEN NOW
+    #
+    # Wird immer benötigt, weil heute immer aus now/
+    # berechnet wird.
+    # ========================================================
 
     current_files = (
-        get_air_temperature_files(
+        get_air_temperature_now_files(
             station_ids
         )
     )
 
-    # --------------------------------------------------------
-    # 5. STATIONEN AUSWERTEN
-    # --------------------------------------------------------
+    # ========================================================
+    # 5. ENTSCHEIDUNG FÜR GESTERN
+    #
+    # Eine Station reicht zur Prüfung.
+    # ========================================================
 
-    results = process_all_stations(
-        station_list,
-        daily_files,
-        current_files,
-        month_start,
-        yesterday,
-        today
+    yesterday_daily_available = (
+        check_yesterday_daily_available(
+            daily_files,
+            yesterday
+        )
     )
 
-    if not results:
-        raise RuntimeError(
-            "Keine Station konnte erfolgreich "
-            "ausgewertet werden."
+    # ========================================================
+    # 6. 10-MINUTEN RECENT
+    #
+    # Nur laden, wenn der fertige Vortag noch fehlt.
+    # ========================================================
+
+    if yesterday_daily_available:
+
+        yesterday_files = {}
+
+        log(
+            "10-Minuten-recent für gestern "
+            "wird nicht benötigt."
         )
 
-    # --------------------------------------------------------
-    # 6. GEODATAFRAME
-    # --------------------------------------------------------
+    else:
+
+        yesterday_files = (
+            get_air_temperature_recent_files(
+                station_ids
+            )
+        )
+
+    # ========================================================
+    # 7. STATIONEN AUSWERTEN
+    # ========================================================
+
+    results = (
+        process_all_stations(
+            station_list,
+            daily_files,
+            current_files,
+            yesterday_files,
+            month_start,
+            yesterday,
+            today,
+            yesterday_daily_available
+        )
+    )
+
+    # ========================================================
+    # 8. GEODATEN
+    # ========================================================
 
     log(
         "Erstelle Geodaten ..."
@@ -1788,11 +2374,9 @@ def main():
         f"{len(gdf)} Stationen für Karten verfügbar"
     )
 
-    # --------------------------------------------------------
-    # 7. GLOBALER DATENSTAND
-    #
-    # Häufigster letzter Messzeitpunkt.
-    # --------------------------------------------------------
+    # ========================================================
+    # 9. GLOBALER DATENSTAND
+    # ========================================================
 
     data_until_counts = (
         gdf["data_until"]
@@ -1812,15 +2396,9 @@ def main():
         + " Uhr"
     )
 
-    # --------------------------------------------------------
-    # 8. DEUTSCHLAND-TAGESMITTEL
-    #
-    # Mittel der Stations-Tagesmittel
-    # * Rasterfaktor
-    #
-    # Dieser Wert wird für Tages- und Monatskarte
-    # identisch verwendet.
-    # --------------------------------------------------------
+    # ========================================================
+    # 10. DEUTSCHLAND-TAGESMITTEL
+    # ========================================================
 
     germany_daily_mean = (
         calculate_germany_daily_mean(
@@ -1833,13 +2411,9 @@ def main():
         f"{germany_daily_mean:.3f} °C"
     )
 
-    # --------------------------------------------------------
-    # 9. DEUTSCHLAND-MONATSMITTEL
-    #
-    # Vollständig aus den Stationsdaten berechnet.
-    #
-    # KEIN vorgegebenes 15,80 °C.
-    # --------------------------------------------------------
+    # ========================================================
+    # 11. DEUTSCHLAND-MONATSMITTEL
+    # ========================================================
 
     germany_month_mean = (
         calculate_germany_month_mean(
@@ -1854,9 +2428,9 @@ def main():
         f"{germany_month_mean:.3f} °C"
     )
 
-    # --------------------------------------------------------
-    # 10. ERSTELLUNGSZEIT
-    # --------------------------------------------------------
+    # ========================================================
+    # 12. ERSTELLUNGSZEIT
+    # ========================================================
 
     created_at = (
         pd.Timestamp.now(
@@ -1868,17 +2442,21 @@ def main():
         )
     )
 
-    # --------------------------------------------------------
-    # 11. DEUTSCHLAND-GEOMETRIE
-    # --------------------------------------------------------
+    # ========================================================
+    # 13. DEUTSCHLAND-GEOMETRIE
+    # ========================================================
+
+    log(
+        "Lade Deutschland-Geometrie ..."
+    )
 
     germany = gpd.read_file(
         SHAPEFILE
     )
 
-    # --------------------------------------------------------
-    # 12. TAGESKARTE
-    # --------------------------------------------------------
+    # ========================================================
+    # 14. TAGESKARTE
+    # ========================================================
 
     plot_temperature_map(
         germany=germany,
@@ -1896,9 +2474,9 @@ def main():
         germany_mean=germany_daily_mean
     )
 
-    # --------------------------------------------------------
-    # 13. MONATSKARTE
-    # --------------------------------------------------------
+    # ========================================================
+    # 15. MONATSKARTE
+    # ========================================================
 
     plot_temperature_map(
         germany=germany,
@@ -1917,9 +2495,9 @@ def main():
         today_germany_mean=germany_daily_mean
     )
 
-    # --------------------------------------------------------
+    # ========================================================
     # ABSCHLUSS
-    # --------------------------------------------------------
+    # ========================================================
 
     log("")
     log("=" * 70)
@@ -1964,4 +2542,5 @@ def main():
 # ============================================================
 
 if __name__ == "__main__":
+
     main()
