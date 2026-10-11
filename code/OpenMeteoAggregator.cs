@@ -78,7 +78,7 @@ public class OpenMeteoAggregator
 {
     (54.5, 8.5),   // Nordfriesland
     (54.0, 11.0),  // Ostsee
-    (53.0, 13.5),  // Nordost
+    (53.0, 12.0),  // Nordost
 
     (52.0, 8.0),   // Teutoburger Wald / Weserbergland
     (51.5, 11.5),  // Harz
@@ -86,7 +86,7 @@ public class OpenMeteoAggregator
 
     (50.0, 8.0),   // Taunus / Mittelhessen
     (49.5, 7.5),   // Hunsrück / Eifel-Rand
-    (48.5, 9.5),   // Schwarzwald
+    (48.5, 8.0),   // Schwarzwald
 
     (49.0, 12.0),  // Bayerischer Wald
     (50.0, 12.5),  // Erzgebirge
