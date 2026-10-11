@@ -75,20 +75,23 @@ public class OpenMeteoAggregator
 
         //return list;
         return new List<(double lat, double lon)>
-        {
-        (54.5, 8.5),
-        (54.0, 11.0),
-        (53.5, 8.5),
-        (53.0, 13.5),
-        (52.5, 7.5),
-        (52.5, 13.5),
-        (51.0, 6.5),
-        (51.0, 10.5),
-        (50.0, 12.5),
-        (49.5, 8.5),
-        (48.5, 11.5),
-        (47.5, 13.0)
-        };
+{
+    (54.5, 8.5),   // Nordfriesland
+    (54.0, 11.0),  // Ostsee
+    (53.0, 13.5),  // Nordost
+
+    (52.0, 8.0),   // Teutoburger Wald / Weserbergland
+    (51.5, 10.5),  // Harz
+    (50.5, 10.5),  // Thüringer Wald
+
+    (50.0, 8.0),   // Taunus / Mittelhessen
+    (49.5, 7.5),   // Hunsrück / Eifel-Rand
+    (48.5, 8.0),   // Schwarzwald
+
+    (49.0, 12.0),  // Bayerischer Wald
+    (50.0, 12.5),  // Erzgebirge
+    (47.5, 13.0)   // Alpenrand
+};
     }
 
     // ------------------------------------------------------------
