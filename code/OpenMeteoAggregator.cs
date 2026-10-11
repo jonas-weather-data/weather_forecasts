@@ -88,7 +88,7 @@ public class OpenMeteoAggregator
     (49.5, 8.0),   // Hunsrück / Eifel-Rand
     (48.5, 8.0),   // Schwarzwald
 
-    (49.5, 12.0),  // Bayerischer Wald
+    (49.0, 12.0),  // Bayerischer Wald
     (50.0, 12.5),  // Erzgebirge
     (47.5, 13.0)   // Alpenrand
 };
