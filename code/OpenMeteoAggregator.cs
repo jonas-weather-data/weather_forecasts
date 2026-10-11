@@ -86,7 +86,7 @@ public class OpenMeteoAggregator
 
     (50.0, 8.0),   // Taunus / Mittelhessen
     (49.5, 7.5),   // Hunsrück / Eifel-Rand
-    (48.5, 8.0),   // Schwarzwald
+    (48.5, 9.5),   // Schwarzwald
 
     (49.0, 12.0),  // Bayerischer Wald
     (50.0, 12.5),  // Erzgebirge
