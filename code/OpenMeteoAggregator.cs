@@ -81,7 +81,7 @@ public class OpenMeteoAggregator
     (53.0, 13.5),  // Nordost
 
     (52.0, 8.0),   // Teutoburger Wald / Weserbergland
-    (51.5, 10.5),  // Harz
+    (51.5, 11.5),  // Harz
     (50.5, 10.5),  // Thüringer Wald
 
     (50.0, 8.0),   // Taunus / Mittelhessen
