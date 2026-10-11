@@ -90,7 +90,7 @@ public class OpenMeteoAggregator
 
     (49.0, 12.0),  // Bayerischer Wald
     (50.0, 12.5),  // Erzgebirge
-    (47.5, 13.0)   // Alpenrand
+    (48.0, 13.0)   // Alpenrand
 };
     }
 
