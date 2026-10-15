@@ -114,7 +114,7 @@ GERMANY_RECORD = 2024.1
 GERMANY_RECORD_YEAR = 2022
 GERMANY_CURRENT_2026 = 1783.0
 
-GERMANY_MONTH_FACTOR = 0.9897
+GERMANY_MONTH_FACTOR = 1.03
 
 
 # ============================================================
@@ -173,6 +173,54 @@ MONTH_NAMES = {
 }
 
 CURRENT_MONTH_NAME = MONTH_NAMES[CURRENT_MONTH]
+
+# ============================================================
+# ERWARTETER RESTSONNENSCHEIN BIS JAHRESENDE
+# Mittelwert 1991–2020
+# ============================================================
+
+CLIMATOLOGY_FILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    'sonnenschein_tagesmittel.txt'
+)
+
+climatology = pd.read_csv(
+    CLIMATOLOGY_FILE,
+    sep=r'\s+',
+    encoding='utf-8'
+)
+
+climatology.columns = [
+    column.strip().lower()
+    for column in climatology.columns
+]
+
+climatology['monat'] = pd.to_numeric(
+    climatology['monat']
+)
+
+climatology['tag'] = pd.to_numeric(
+    climatology['tag']
+)
+
+climatology['sonnenschein'] = pd.to_numeric(
+    climatology['sonnenschein']
+)
+
+remaining_days = climatology[
+    (
+        climatology['monat'] > TODAY.month
+    )
+    | (
+        (climatology['monat'] == TODAY.month)
+        & (climatology['tag'] >= TODAY.day)
+    )
+]
+
+EXPECTED_REMAINING_SUNSHINE = round(
+    remaining_days['sonnenschein'].sum(),
+    1
+)
 
 
 # ============================================================
@@ -524,6 +572,13 @@ def create_map(
                 f"{result['record']:.1f}\n"
                 f"({result['record_year']})"
             )
+        elif mode == 'remaining':
+            difference = result['remaining']
+
+            if difference < 0:
+                txt = f"−{abs(difference):.1f}"
+            else:
+                txt = f"{difference:.1f}"
         else:
             txt = f"{result[mode]:.1f}"
 
@@ -555,10 +610,26 @@ def create_map(
 
         fig.text(
             0.5,
-            0.035,
+            0.065,
             germany_text,
             ha='center',
             fontsize=12,
+            fontweight='bold'
+        )
+        
+        projected_germany = round(
+            germany_mean['current']
+            + EXPECTED_REMAINING_SUNSHINE,
+            1
+        )
+
+        fig.text(
+            0.5,
+            0.040,
+            f'Jahresendstand bei Mittel 1991–2020: '
+            f'{projected_germany:.1f} h',
+            ha='center',
+            fontsize=11,
             fontweight='bold'
         )
 
@@ -591,6 +662,42 @@ def create_map(
                 - germany_mean['current'],
                 1
             )
+            
+            projected_germany = round(
+                germany_mean['current']
+                + EXPECTED_REMAINING_SUNSHINE,
+                1
+            )
+
+            projected_difference = round(
+                projected_germany
+                - germany_mean['record'],
+                1
+            )
+
+            if projected_difference < 0:
+                forecast_text = (
+                    f'Prognose: Rekord wird um '
+                    f'{abs(projected_difference):.1f} h verfehlt'
+                )
+            elif projected_difference > 0:
+                forecast_text = (
+                    f'Prognose: Rekord wird um '
+                    f'{projected_difference:.1f} h übertroffen'
+                )
+            else:
+                forecast_text = (
+                    'Prognose: Rekord wird genau erreicht'
+                )
+
+            fig.text(
+                0.5,
+                0.040,
+                forecast_text,
+                ha='center',
+                fontsize=11,
+                fontweight='bold'
+            )
 
             germany_text = (
                 f"Deutschlandmittel: noch "
@@ -599,7 +706,7 @@ def create_map(
 
             fig.text(
                 0.5,
-                0.035,
+                0.065,
                 germany_text,
                 ha='center',
                 fontsize=12,
@@ -881,7 +988,7 @@ create_map(
 create_map(
     results,
     'remaining',
-    'Fehlend bis Stationsrekord',
+    'Fehlend zum Rekord',
     remaining_output,
     'RdYlGn_r',
     germany_mean
