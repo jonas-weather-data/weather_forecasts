@@ -65,15 +65,28 @@ public class GitHubUploader
         var response = await _client.PutAsync(apiUrl, content);
         string json = await response.Content.ReadAsStringAsync();
 
-        using var doc = JsonDocument.Parse(json);
-
         if (!response.IsSuccessStatusCode)
         {
-            if (doc.RootElement.TryGetProperty("message", out var msg))
-                throw new Exception($"GitHub error ({response.StatusCode}): {msg.GetString()}");
+            string requestId = response.Headers.Contains("X-GitHub-Request-Id")
+                ? string.Join(",", response.Headers.GetValues("X-GitHub-Request-Id"))
+                : "unbekannt";
 
-            throw new Exception($"GitHub error ({response.StatusCode}): {json}");
+            throw new Exception(
+                $"GitHub PUT-Fehler\n" +
+                $"Status: {response.StatusCode}\n" +
+                $"Pfad: {repoPath}\n" +
+                $"Dateigröße: {bytes.Length} Bytes\n" +
+                $"SHA vorhanden: {sha != null}\n" +
+                $"Request-ID: {requestId}\n" +
+                $"Antwort: {json}");
         }
+
+        using var doc = JsonDocument.Parse(json);
+
+        return doc.RootElement
+            .GetProperty("content")
+            .GetProperty("download_url")
+            .GetString();
 
         return doc.RootElement.GetProperty("content").GetProperty("download_url").GetString();
     }
@@ -81,21 +94,26 @@ public class GitHubUploader
     private async Task<string?> TryGetShaAsync(string apiUrl)
     {
         var response = await _client.GetAsync(apiUrl);
+        string json = await response.Content.ReadAsStringAsync();
 
         if (response.StatusCode == HttpStatusCode.NotFound)
             return null;
 
         if (!response.IsSuccessStatusCode)
-            return null;
+        {
+            throw new Exception(
+                $"GitHub GET-Fehler: {response.StatusCode}\n" +
+                $"URL: {apiUrl}\n" +
+                $"Antwort: {json}");
+        }
 
-        string json = await response.Content.ReadAsStringAsync();
         using var doc = JsonDocument.Parse(json);
 
         if (doc.RootElement.TryGetProperty("sha", out var shaProp))
             return shaProp.GetString();
 
-        return null;
-    }
+        throw new Exception("GitHub-Antwort enthält keinen SHA-Hash.");
+    }    
 
     // ---------------------------------------------------------
     // ALTE METHODEN (BLEIBEN)
