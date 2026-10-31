@@ -351,12 +351,27 @@ public class TempDiagramService
         var uploader = new GitHubUploader("jonas-weather-data", "weather_forecasts");
         string dateFolder = today.ToString("yyyy-MM-dd");
 
-        uploader.UploadLatestAsync(localPath, "temperatur_monat.png").GetAwaiter().GetResult();
-        uploader.UploadRunLatestAsync(_run, localPath, "temperatur_monat.png").GetAwaiter().GetResult();
+        Console.WriteLine("Upload 1: Latest");
 
-        string link = uploader.UploadRunDayAsync(_run, dateFolder, localPath, "temperatur_monat.png")
-            .GetAwaiter()
-            .GetResult();
+        uploader.UploadLatestAsync(localPath, "temperatur_monat.png")
+            .GetAwaiter().GetResult();
+
+        Console.WriteLine("Upload 1 erfolgreich");
+
+        Console.WriteLine("Upload 2: RunLatest");
+
+        uploader.UploadRunLatestAsync(_run, localPath, "temperatur_monat.png")
+            .GetAwaiter().GetResult();
+
+        Console.WriteLine("Upload 2 erfolgreich");
+
+        Console.WriteLine("Upload 3: RunDay");
+
+        string link = uploader.UploadRunDayAsync(
+            _run, dateFolder, localPath, "temperatur_monat.png")
+            .GetAwaiter().GetResult();
+
+        Console.WriteLine("Upload 3 erfolgreich");
 
         return link;
     }
