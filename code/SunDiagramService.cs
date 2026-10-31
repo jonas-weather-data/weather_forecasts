@@ -272,10 +272,10 @@ public class SunDiagramService
         var uploader = new GitHubUploader("jonas-weather-data", "weather_forecasts");
         string dateFolder = today.ToString("yyyy-MM-dd");
 
-        uploader.UploadLatestAsync(localPath, "sonne_monat_test.png").GetAwaiter().GetResult();
-        uploader.UploadRunLatestAsync(_run, localPath, "sonne_monat_test.png").GetAwaiter().GetResult();
+        uploader.UploadLatestAsync(localPath, "sonne_monat.png").GetAwaiter().GetResult();
+        uploader.UploadRunLatestAsync(_run, localPath, "sonne_monat.png").GetAwaiter().GetResult();
 
-        string link = uploader.UploadRunDayAsync(_run, dateFolder, localPath, "sonne_monat_test.png")
+        string link = uploader.UploadRunDayAsync(_run, dateFolder, localPath, "sonne_monat.png")
             .GetAwaiter()
             .GetResult();
 
