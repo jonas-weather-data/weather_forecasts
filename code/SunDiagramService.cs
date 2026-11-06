@@ -147,7 +147,7 @@ public class SunDiagramService
             MajorGridlineColor = OxyColor.FromRgb(120, 120, 120),
             MinorGridlineColor = OxyColor.FromRgb(150, 150, 150),
             Minimum = 0,
-            Maximum = Math.Max(200, Math.Ceiling(climEnd * 1.05)),
+            Maximum = Math.Max(100, Math.Ceiling(climEnd * 1.05)),
             MinimumPadding = 0.05,
             MaximumPadding = 0.05
         });
