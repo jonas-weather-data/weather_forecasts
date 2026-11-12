@@ -1,0 +1,32 @@
+name: Cleanup Old Images and History
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Remove date folders and reset git history
+        run: |
+          # Alle Datumsordner (YYYY-MM-DD) unter images/ loeschen, latest behalten
+          find images -maxdepth 2 -type d -regex '.*/[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}' -exec rm -rf {} +
+
+          # Komplette alte Historie (10.000 Commits) verwerfen und frischen Stand erzeugen
+          git checkout --orphan clean_main
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@://github.com"
+          git add -A
+          git commit -m "Clean repository and keep only latest images"
+          git branch -D main
+          git branch -m main
+          git push -f origin main

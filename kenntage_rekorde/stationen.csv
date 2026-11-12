@@ -1,0 +1,463 @@
+name;station_id
+Aachen-Orsbach;15000
+Ahaus;07374
+Aldersbach-Kramersepp;00073
+Alfeld;07367
+Alfhausen;00078
+Algermissen-Groß Lobke;00860
+Alsfeld-Eifa;00091
+Altheim, Kreis Biberach;04189
+Altomünster-Maisbrunn;00142
+Alzey;00150
+Amberg-Unterammersricht;00151
+Amerang-Pfaffing;00154
+Andernach;00161
+Angermünde;00164
+Anklam;00167
+Arkona;00183
+Arnsberg-Neheim;07330
+Arnstein-Müdesheim;00191
+Artern;00198
+Aschersleben-Mehringen;03226
+Attenkam;00217
+Aue;00222
+Augsburg;00232
+Baden-Baden-Geroldsau;00257
+Balingen-Bronnhaupten;13965
+Bamberg;00282
+Barsinghausen-Hohenbostel;00294
+Barth;00298
+Baruth;00303
+Bassum;05822
+Belm;00342
+Bergzabern, Bad;00377
+Berka, Bad (Flugplatz);00379
+Berleburg, Bad-Stünzel;00390
+Berlin Brandenburg;00427
+Berlin-Buch;00400
+Berlin-Dahlem (FU);00403
+Berlin-Marzahn;00420
+Berlin-Tempelhof;00433
+Bernburg/Saale (Nord);00445
+Bertsdorf-Hörnitz;02252
+Berus;00460
+Bevern, Kr. Holzminden;02323
+Bielefeld-Deppendorf;07106
+Birx/Rhön;01411
+Blankenrath;00535
+Bochum;00555
+Boizenburg;00591
+Boltenhagen;00596
+Borken in Westfalen;00617
+Borkum-Flugplatz;07373
+Braunlage;00656
+Braunschweig;00662
+Bremen;00691
+Bremerhaven;00701
+Bremervörde;00704
+Brilon-Thülen;06264
+Brocken;00722
+Buchen, Kr. Neckar-Odenwald;00755
+Buchenbach;00757
+Burgwald-Bottendorf;00817
+Carlsfeld;00840
+Chemnitz;00853
+Chieming;00856
+Cölbe, Kr. Marburg-Biedenkopf;03164
+Cottbus;00880
+Cuxhaven;00891
+Dachsberg-Wolpadingen;05688
+Dachwig;00896
+Darmstadt;00917
+Demker;06273
+Deuselbach;00953
+Deutschneudorf-Brüderwiese;07343
+Diepholz;00963
+Dillingen/Donau-Fristingen;00983
+Dippoldiswalde-Reinberg;00991
+Doberlug-Kirchhain;01001
+Donauwörth-Osterweiler;07319
+Dörnick;06163
+Dörpen;06159
+Dresden-Hosterwitz;01050
+Dresden-Klotzsche;01048
+Duisburg-Baerl;13670
+Dürkheim, Bad;01072
+Düsseldorf;01078
+Ebersberg-Halbing;01103
+Ebrach;01107
+Eichstätt-Landershofen;01161
+Eisenach;07368
+Ellwangen-Rindelbach;01197
+Elpersbüttel;01200
+Elsendorf-Horneck;07075
+Elster, Bad-Sohl;01207
+Elzach-Fisnacht;01214
+Emden;05839
+Emmendingen-Mundingen;01224
+Ennigerloh-Ostenfelde;01246
+Eppingen-Elsenz;01255
+Erfde;01266
+Erfurt-Weimar;01270
+Eschwege;01297
+Eslohe;01300
+Essen-Bredeney;01303
+Falkenberg,Kr.Rottal-Inn;01332
+Fehmarn;05516
+Feldberg/Mecklenburg;07351
+Feldberg/Schwarzwald;01346
+Feuchtwangen-Heilbronn;07369
+Fichtelberg;01358
+Fichtelberg/Oberfranken-Hüttstadl;01357
+Frankfurt/Main;01420
+Frankfurt/Main-Westend;01424
+Freiburg;01443
+Freiburg/Elbe;01451
+Freudenberg/Main-Boxtal;07187
+Freudenstadt;01468
+Friedrichshafen-Unterraderach;06258
+Friesoythe-Altenoythe;01503
+Fulda-Horas;01526
+Fürstenzell;05856
+Gardelegen;01544
+Garmisch-Partenkirchen;01550
+Geisenheim;01580
+Gelbelsee;01587
+Geldern-Walbeck;01590
+Genthin;01605
+Gera-Leumnitz;01612
+Geringswalde-Altgeringswalde;00131
+Gevelsberg-Oberbröking;13700
+Gießen/Wettenberg;01639
+Gilserberg-Moischeid;01645
+Goldberg;01694
+Gollhofen;05149
+Görlitz;01684
+Gottfrieding;07395
+Göttingen;01691
+Gräfenberg-Kasberg;01721
+Grainet-Rehberg;01735
+Grambek;01736
+Grambow-Schwennenz;06109
+Greifswald;01757
+Greifswalder Oie;01759
+Groß Berßen;01792
+Großenkneten;00044
+Großer Arber;01832
+Großerlach-Mannenweiler;06259
+Gründau-Breitenborn;01863
+Grünow;01869
+Gülzow-Prüzen;19207
+Günzburg;01886
+Hahn;05871
+Hamburg-Fuhlsbüttel;01975
+Hamburg-Neuwiedenthal;01981
+Hameln-Hastenbeck;13675
+Hannover;02014
+Harburg;02023
+Harzburg, Bad;02039
+Harzgerode;02044
+Hasenkrug-Hardebek;19171
+Hattstedt;07298
+Hechingen;02074
+Heckelberg-Brunow;07389
+Heinersreuth-Vollhof;00320
+Helgoland;02115
+Helmstedt-Emmerstedt;13777
+Hermaringen-Allewind;07331
+Hersfeld, Bad;02171
+Herzberg;02174
+Hiddensee-Vitte;02201
+Hilgenroth;02211
+Hof;02261
+Hohenpeißenberg;02290
+Hoherodskopf/Vogelsberg;07396
+Hohwacht;02306
+Holzkirchen;02319
+Hoyerswerda;07393
+Huy-Pabstorf;06266
+Ingelfingen-Stachenhausen;06260
+Itzehoe;02429
+Jena (Sternwarte);02444
+Jeßnitz;07364
+Kahl/Main;02480
+Kahler Asten;02483
+Kaisersbach-Cronhütte;02485
+Kaiserslautern;02486
+Kall-Sistig;02497
+Karlshagen;06310
+Kaufbeuren-Oberbeuren;15555
+Kempten;02559
+Kiefersfelden-Gach;03679
+Kiel-Holtenau;02564
+Kirchberg/Jagst-Herboldshausen;02575
+Kirchdorf/Poel;02578
+Kissingen, Bad;02597
+Kitzingen;02600
+Kleiner Feldberg/Taunus;02601
+Kleve;02629
+Klippeneck;02638
+Klipphausen-Garsebach;03234
+Klitzschen bei Torgau;02641
+Kohlgrub, Bad (Rosshof);02708
+Köln/Bonn;02667
+Königshofen, Bad;02680
+Königswinter-Heiderhof;00603
+Konstanz;02712
+Kösching;02700
+Köthen (Anhalt);02704
+Kreuznach, Bad;04301
+Krölpa-Rockendorf;13711
+Kronach;02750
+Kubschütz, Kr. Bautzen;00314
+Kyritz;02794
+Lahr;02812
+Langenwetzendorf-Göttendorf;07419
+Lauchstädt, Bad;02878
+Lautertal-Oberlauter;00867
+Leck;02907
+Leinefelde;02925
+Leipzig/Halle;02932
+Leipzig-Holzhausen;02928
+Lennestadt-Theten;02947
+Lenzen/Elbe;02951
+Lenzkirch-Ruhbühl;02953
+Leuchtturm Alte Weser;00102
+Leutkirch-Herlazhofen;07403
+Lichtenhain-Mittelndorf;02985
+Lichtentanne;05797
+Lindenberg;03015
+Lingen-Baccum;15813
+Lippspringe, Bad;03028
+Lippstadt-Bökenförde;03031
+List auf Sylt;03032
+Lobenstein, Bad;03034
+Löhnberg-Obershausen;03042
+Lohr/Main-Halsbach;06336
+Lübben-Blumenfelde;03083
+Lübeck-Blankensee;03086
+Lüchow;03093
+Lüdenscheid;03098
+Lüdinghausen-Brochtrup;06337
+Lügde-Paenbruch;06197
+Magdeburg;03126
+Mainz-Lerchenberg (ZDF);03137
+Maisach-Galgen;06346
+Mallersdorf-Pfaffenberg-Oberlindhart;03147
+Manderscheid-Sonnenhof;03155
+Mannheim;05906
+Manschnow;03158
+Marienberg;03166
+Marienberg, Bad;03167
+Markt Erlbach-Hagenhofen;03181
+Marnitz;03196
+Martinroda;03204
+Meinerzhagen-Redlendorf;13713
+Meiningen;03231
+Memmingen;03244
+Mergentheim, Bad;03257
+Meßstetten-Appental;03268
+Metten;03271
+Metzingen;03278
+Michelstadt;03284
+Michelstadt-Vielbrunn;03287
+Mittelnkirchen-Hohenfelde;04857
+Mittenwald-Buckelwiesen;03307
+Möckern-Drewitz;01052
+Möhrendorf-Kleinseebach;01279
+Mönchengladbach-Hilderath;03321
+Moringen-Lutterbeck;03348
+Mühlacker;03362
+Mühldorf;03366
+Mühlhausen/Thüringen-Görmar;06305
+Müllheim;00259
+Müncheberg;03376
+München-Flughafen;01262
+München-Stadt;03379
+Münsingen-Apfelstetten;03402
+Münster/Osnabrück;01766
+Muskau, Bad;03426
+Nauen-Berge;05825
+Nauheim, Bad;03442
+Naumburg/Saale-Kreipitzsch;07420
+Neißemünde-Coschen;06170
+Neubulach-Oberhaugstett;05562
+Neuburg/Kammel-Langenhaslach;03485
+Neuenahr, Bad-Ahrweiler;03490
+Neuhaus am Rennweg;03513
+Neuhütten/Spessart;07412
+Neukirchen-Hauptschwenda;03527
+Neunkirchen-Seelscheid-Krawinkel;03540
+Neunkirchen-Wellesweiler;03545
+Neuruppin-Alt Ruppin;00096
+Neustadt am Kulm-Filchendorf;03571
+Neu-Ulrichstein;07410
+Nideggen-Schmidt;03591
+Niedergörsdorf-Langenlipsdorf;02856
+Norderney;03631
+Nossen;06314
+Notzingen;06275
+Nürburg-Barweiler;03660
+Nürnberg;03668
+Nürnberg-Netzstall;03667
+Oberhaching-Laufzorn;07431
+Oberharz am Brocken-Stiege;04878
+Oberstdorf;03730
+Obersulm-Willsbach;03734
+Oberviechtach;03739
+Oberzent-Beerfelden;00330
+Offenbach-Wetterpark;07341
+Ohlsbach;01602
+Öhringen;03761
+Olbersleben;07321
+Olsdorf;01964
+Oschatz;03811
+Ostenfeld (Rendsburg);06105
+Osterfeld;03821
+Ostheim v.d. Rhön;03836
+Oy-Mittelberg-Petersthal;03857
+Padenstedt (Pony-Park);07427
+Parsberg/Oberpfalz-Eglwang;03875
+Pelzerhaken;03897
+Perl-Nennig;03904
+Pforzheim-Ispringen;03925
+Pfullendorf;03927
+Piding;07424
+Pirmasens;03939
+Plauen;03946
+Pommelsbrunn-Mittelburg;03975
+Potsdam;03987
+Putbus;04024
+Quedlinburg;04032
+Querfurt-Mühle Lodersleben;04036
+Quickborn;04039
+Rahden-Kleinendorf;04063
+Regensburg;04104
+Reichshof-Eckenhagen;04127
+Reimlingen;03621
+Renningen-Ihinger Hof;04160
+Rheinau-Memprechtshofen;04169
+Rheinfelden;04175
+Rheinstetten;04177
+Röllbach;03319
+Rosengarten-Klecken;00760
+Rostock-Warnemünde;04271
+Rotenburg (Wümme);04275
+Roth;04280
+Rothenburg ob der Tauber;04287
+Rottweil;04300
+Runkel-Ennerich;06344
+Ruppertsecken;04323
+Saarbrücken-Burbach;06217
+Saarbrücken-Ensheim;04336
+Sachsenheim;04349
+Saldenburg-Entschenreuth;04354
+Salzuflen, Bad;04371
+Salzungen, Bad-Gräfen-Nitzendorf;06272
+Sandberg;04377
+Sanitz-Groß Lüsewitz;01803
+Sankt Peter-Ording;04393
+Schaafheim-Schlierbach;04411
+Schauenburg-Elgershausen;15207
+Schipkau-Klettwitz;02627
+Schleiz;04464
+Schleswig;04466
+Schlüchtern-Herolz;04480
+Schmieritz-Weltwitz;03289
+Schmücke;04501
+Schneifelforsthaus;04508
+Schönau am Königssee;19856
+Schönhagen (Ostseebad);05930
+Schonungen-Mainberg;06347
+Schönwald/Ofr.-Brunn;04548
+Schorndorf-Knöbling;04559
+Schwäbisch Gmünd-Weiler;06262
+Schwandorf;04592
+Schwarzburg;04605
+Schwerin;04625
+Seebach (Nationalpark Schwarzwald);20098
+Seehausen;04642
+Seesen;04651
+Siegsdorf-Höll;07105
+Sigmaringen-Laiz;04703
+Sigmarszell-Zeisertsweiler;04704
+Simbach/Inn;04706
+Simmern-Wahlbach;04709
+Singen;06263
+Sohland/Spree;06129
+Soltau;04745
+Sondershausen;04748
+Sontra;04763
+Staffelstein, Bad-Stublang;04813
+Starkenberg-Tegkwitz;04997
+Stechlin-Menz;03509
+Steinau, Kr. Cuxhaven;04841
+Steinhagen-Negast;06199
+Stötten;04887
+Straubing;04911
+Stuttgart (Schnarrenberg);04928
+Stuttgart-Echterdingen;04931
+Tann/Rhön;04978
+Teterow;05009
+Teuschnitz;05017
+Tholey;05029
+Tirschenreuth-Lodermühl;05046
+Tönisvorst;05064
+Treuen;07329
+Tribsees;05097
+Trier-Petrisberg;05100
+Trier-Zewen;05099
+Trollenhagen;05109
+Trostberg;05111
+Twistetal-Mühlhausen;05133
+Ueckermünde;05142
+Uelzen;05146
+Ulm-Mähringen;15444
+Ummendorf;05158
+Veilsdorf;07428
+Villingen-Schwenningen;05229
+Wacken;19172
+Waghäusel-Kirrlach;05275
+Waibstadt;13674
+Waldems-Reinborn;05300
+Waldmünchen;07370
+Waltershausen;05335
+Waltrop-Abdinghof;13696
+Wangerland-Hooksiel;06157
+Warburg;05347
+Waren (Müritz);05349
+Wasserkuppe;05371
+Weiden;05397
+Weidenbach-Weiherschneidbach;06158
+Weihenstephan-Dürnast;05404
+Weilerswist-Lommersum;01327
+Weimar-Schöndorf;05424
+Weinbiet;05426
+Weingarten, Kr. Ravensburg;04094
+Weiskirchen/Saar;05433
+Weißenburg-Emetzheim;05440
+Wendisch Evern;06093
+Werl;05480
+Wernigerode;05490
+Wernigerode-Schierke;04445
+Wesertal-Lippoldsberg;05279
+Wielenbach (Demollstr.);05538
+Wiesbaden-Auringen;05541
+Wiesenburg;05546
+Wittenberg;05629
+Wittenborn;05280
+Wittingen-Vorhop;07432
+Wittstock-Rote Mühle;05643
+Wolfach;05664
+Worms;05692
+Worpswede-Hüttenbusch;05014
+Wunsiedel-Schönbrunn;07394
+Wuppertal-Buchenhofen;05717
+Würzburg;05705
+Wusterwitz;06265
+Wutöschingen-Ofteringen;05731
+Zehdenick;05745
+Zeitz;05750
+Zinnwald-Georgenfeld;05779
+Zugspitze;05792
+Zwiesel;05800

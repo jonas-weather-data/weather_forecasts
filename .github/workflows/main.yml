@@ -1,0 +1,49 @@
+name: Weather Forecast Update
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  repository_dispatch:
+    types: [weather-update]
+
+jobs:
+  run-weather:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore ./code/GetDWDTagesdaten.csproj
+
+      - name: Build
+        run: dotnet build ./code/GetDWDTagesdaten.csproj --configuration Release --no-restore
+
+      - name: Execute application
+        run: dotnet run --project ./code/GetDWDTagesdaten.csproj --configuration Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit and push images
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@://github.com"
+          git add -A images/
+          if ! git diff --staged --quiet; then
+            git commit -m "Update weather images"
+            for i in 1 2 3; do
+              git pull --rebase origin main && git push origin HEAD:main && break
+              sleep 2
+            done
+          fi
