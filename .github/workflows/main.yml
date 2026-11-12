@@ -17,6 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 1
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -34,16 +35,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Commit and push images
+      - name: Update latest images without growing history
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@://github.com"
           git add -A images/
           if ! git diff --staged --quiet; then
-            git commit -m "Update weather images"
-            for i in 1 2 3; do
-              git pull --rebase origin main && git push origin HEAD:main && break
-              sleep 2
-            done
+            git commit --amend -m "Update latest weather images"
+            git push --force-with-lease origin main
           fi
