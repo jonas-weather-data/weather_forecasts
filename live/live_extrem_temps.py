@@ -8,6 +8,12 @@ import requests
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+
+from matplotlib.colors import (
+    LinearSegmentedColormap,
+    Normalize
+)
 
 
 # ============================================================
@@ -843,50 +849,93 @@ def format_temperature(value):
 
 
 # ============================================================
-# TEXTFARBE
+# FARBSKALEN
 # ============================================================
+
+TXK_NORM = Normalize(
+    vmin=-20,
+    vmax=50,
+    clip=True
+)
+
+TNK_NORM = Normalize(
+    vmin=-30,
+    vmax=30,
+    clip=True
+)
+
+
+TXK_CMAP = LinearSegmentedColormap.from_list(
+    "txk",
+    [
+
+        (0.00, "#08306b"),   # -20
+
+        (0.20, "#6baed6"),   # -6
+
+        (0.35, "#31a354"),   # 4
+
+        (0.50, "#ffff66"),   # 15
+
+        (0.64, "#fdae61"),   # 25
+
+        (0.71, "#e31a1c"),   # 30
+
+        (0.79, "#99000d"),   # 35
+
+        (0.86, "#6a3d9a"),   # 40
+
+        (0.93, "#c51b8a"),   # 45
+
+        (1.00, "#f768a1")    # 50
+
+    ]
+)
+
+
+TNK_CMAP = LinearSegmentedColormap.from_list(
+    "tnk",
+    [
+
+        (0.00, "#6a00a8"),   # -30
+
+        (0.17, "#084594"),   # -20
+
+        (0.33, "#2171b5"),   # -10
+
+        (0.50, "#9ecae1"),   # 0
+
+        (0.58, "#238b45"),   # 5
+
+        (0.67, "#ffff66"),   # 10
+
+        (0.75, "#fd8d3c"),   # 15
+
+        (0.83, "#e31a1c"),   # 20
+
+        (0.92, "#99000d"),   # 25
+
+        (1.00, "#67000d")    # 30
+
+    ]
+)
 
 def txk_text_color(value):
 
-    if value >= 35:
-
-        return "#7f0000"
-
-    if value >= 30:
-
-        return "#a50026"
-
-    if value >= 25:
-
-        return "#c63d17"
-
-    if value >= 20:
-
-        return "#8c2d04"
-
-    return "#333333"
+    return mcolors.to_hex(
+        TXK_CMAP(
+            TXK_NORM(value)
+        )
+    )
 
 
 def tnk_text_color(value):
 
-    if value <= -10:
-
-        return "#08306b"
-
-    if value <= -5:
-
-        return "#08519c"
-
-    if value <= 0:
-
-        return "#2171b5"
-
-    if value <= 5:
-
-        return "#225ea8"
-
-    return "#333333"
-
+    return mcolors.to_hex(
+        TNK_CMAP(
+            TNK_NORM(value)
+        )
+    )
 
 # ============================================================
 # BUNDESLAND-EXTREME
