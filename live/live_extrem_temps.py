@@ -392,6 +392,19 @@ def process_station(
     target_date
 ):
 
+    day_start = pd.Timestamp(
+        target_date,
+        tz="UTC"
+    )
+
+    day_end = (
+        day_start
+        + pd.Timedelta(
+            hours=23,
+            minutes=50
+        )
+    )
+
     url = NOW_URL + filename
 
     response = get(url)
@@ -494,24 +507,19 @@ def process_station(
 
                     continue
 
-                # DWD liefert den Zeitstempel in UTC.
-                # Für die Tagesauswertung in Deutschland
-                # wird er zunächst in Europe/Berlin umgerechnet.
+                if (
+                    mess_datum < day_start
+                    or mess_datum > day_end
+                ):
 
-                # DWD-Tagesbezug:
-# UTC-Zeitstempel des Auswertungstages verwenden.
-# Die 10-Minuten-Werte markieren das Ende
-# des jeweiligen Messintervalls.
+                    continue
 
-if mess_datum.date() != target_date:
-
-    continue
-
-# Anschließend in deutsche Ortszeit umrechnen.
-mess_datum = (
-    mess_datum
-    .tz_convert("Europe/Berlin")
-)
+                mess_datum = (
+                    mess_datum
+                    .tz_convert(
+                        "Europe/Berlin"
+                    )
+                )
 
                 tx10 = parse_nullable_decimal(
                     fields[3]
@@ -1641,7 +1649,7 @@ def main():
 
     target_date = (
         pd.Timestamp.now(
-            tz="Europe/Berlin"
+            tz="UTC"
         ).date()
     )
 
