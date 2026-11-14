@@ -1589,24 +1589,14 @@ def plot_map(
             format_temperature(
                 value
             ),
-            fontsize=8.0,
+            fontsize=9.0,
             fontweight="bold",
             ha="center",
             va="center",
             color=color_function(
                 value
             ),
-            zorder=10,
-            bbox={
-                "boxstyle":
-                    "round,pad=0.13",
-                "facecolor":
-                    "white",
-                "edgecolor":
-                    "none",
-                "alpha":
-                    0.78
-            }
+            zorder=10
         )
 
     # ========================================================
