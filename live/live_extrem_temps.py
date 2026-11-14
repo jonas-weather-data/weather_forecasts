@@ -498,17 +498,20 @@ def process_station(
                 # Für die Tagesauswertung in Deutschland
                 # wird er zunächst in Europe/Berlin umgerechnet.
 
-                mess_datum = (
-                    mess_datum
-                    .tz_convert("Europe/Berlin")
-                )
+                # DWD-Tagesbezug:
+# UTC-Zeitstempel des Auswertungstages verwenden.
+# Die 10-Minuten-Werte markieren das Ende
+# des jeweiligen Messintervalls.
 
-                if (
-                    mess_datum.date()
-                    != target_date
-                ):
+if mess_datum.date() != target_date:
 
-                    continue
+    continue
+
+# Anschließend in deutsche Ortszeit umrechnen.
+mess_datum = (
+    mess_datum
+    .tz_convert("Europe/Berlin")
+)
 
                 tx10 = parse_nullable_decimal(
                     fields[3]
