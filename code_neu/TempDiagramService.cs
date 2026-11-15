@@ -73,7 +73,11 @@ public class TempDiagramService
         }
     }
 
-    public string CreateTempDiagram(MosmixData mos, OpenMeteoData om, DateTime today)
+    public string CreateTempDiagram(
+    MosmixData mos,
+    OpenMeteoData om,
+    ForecastStatus forecastStatus,
+    DateTime today)
     {
         double? dbValue = Load00zTempFromJson("MOSMIX", today);
         if (dbValue.HasValue)
@@ -92,6 +96,23 @@ public class TempDiagramService
         if (aifs00.HasValue) om.Temp["AIFS"][today] = (aifs00.Value, 1);
         if (ukmo00.HasValue) om.Temp["UKMO"][today] = (ukmo00.Value, 1);
         if (gem00.HasValue) om.Temp["GEM"][today] = (gem00.Value, 1);
+
+        foreach (var model in new[]
+{
+    "ICON",
+    "GFS",
+    "IFS",
+    "AIFS",
+    "UKMO",
+    "GEM"
+})
+{
+    if (!om.Temp.ContainsKey(model))
+    {
+        om.Temp[model] =
+            new Dictionary<DateTime, (double temp, int count)>();
+    }
+}
 
         int year = today.Year;
         int month = today.Month;
@@ -118,14 +139,12 @@ public class TempDiagramService
         int lastUkmoDayTempRaw = GetLastValidTempDay(om.Temp["UKMO"], year, month, forecastStartDay);
         int lastGemDayTempRaw = GetLastValidTempDay(om.Temp["GEM"], year, month, forecastStartDay);
 
-        var helper = new OpenMeteoService(null, null);
-
-        var iconSeries = helper.BuildTempSeries(om.Temp["ICON"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastIconDayTempRaw, year, month, "ICON");
-        var gfsSeries = helper.BuildTempSeries(om.Temp["GFS"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastGfsDayTempRaw, year, month, "GFS");
-        var ifsSeries = helper.BuildTempSeries(om.Temp["IFS"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastIfsDayTempRaw, year, month, "IFS");
-        var aifsSeries = helper.BuildTempSeries(om.Temp["AIFS"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastAifsDayTempRaw, year, month, "AIFS");
-        var ukmoSeries = helper.BuildTempSeries(om.Temp["UKMO"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastUkmoDayTempRaw, year, month, "UKMO");
-        var gemSeries = helper.BuildTempSeries(om.Temp["GEM"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastGemDayTempRaw, year, month, "GEM");
+        var iconSeries = OpenMeteoService.BuildTempSeries(om.Temp["ICON"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastIconDayTempRaw, year, month, "ICON");
+        var gfsSeries = OpenMeteoService.BuildTempSeries(om.Temp["GFS"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastGfsDayTempRaw, year, month, "GFS");
+        var ifsSeries = OpenMeteoService.BuildTempSeries(om.Temp["IFS"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastIfsDayTempRaw, year, month, "IFS");
+        var aifsSeries = OpenMeteoService.BuildTempSeries(om.Temp["AIFS"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastAifsDayTempRaw, year, month, "AIFS");
+        var ukmoSeries = OpenMeteoService.BuildTempSeries(om.Temp["UKMO"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastUkmoDayTempRaw, year, month, "UKMO");
+        var gemSeries = OpenMeteoService.BuildTempSeries(om.Temp["GEM"], lastObservedDayTemp, lastObservedTempMean, forecastStartDay, lastGemDayTempRaw, year, month, "GEM");
 
         int lastIconDayDataTemp = iconSeries.days.Count > 0 ? iconSeries.days.Last() : lastObservedDayTemp;
         int lastGfsDayDataTemp = gfsSeries.days.Count > 0 ? gfsSeries.days.Last() : lastObservedDayTemp;
@@ -335,6 +354,47 @@ public class TempDiagramService
             TextVerticalAlignment = VerticalAlignment.Bottom
         });
 
+        string statusText;
+
+if (forecastStatus.AllDataAvailable)
+{
+    statusText =
+        "✅ Alle Modelldaten wurden vollständig bereitgestellt.";
+}
+else if (!forecastStatus.FinalAttempt)
+{
+    statusText =
+        $"⏳ {forecastStatus.PercentAvailable:F0}% der Daten verfügbar. " +
+        $"Nachladeversuch läuft.";
+}
+else
+{
+    statusText =
+        $"❌ {forecastStatus.PercentAvailable:F0}% der Daten verfügbar. " +
+        $"Nicht bereitgestellt: " +
+        string.Join(", ", forecastStatus.MissingModels);
+}
+
+model.Annotations.Add(new TextAnnotation
+{
+    Text = statusText,
+    TextPosition =
+        new DataPoint(
+            (daysInMonth + 1) / 2.0,
+            minTemp - 1.7),
+    Font = "Segoe UI",
+    FontSize = 16,
+    TextColor = OxyColors.Black,
+    StrokeThickness = 0,
+    Background = OxyColor.FromAColor(
+        0,
+        OxyColors.White),
+    TextHorizontalAlignment =
+        HorizontalAlignment.Center,
+    TextVerticalAlignment =
+        VerticalAlignment.Bottom
+});
+
         string localPath = "temperatur_monat.png";
 
         using (var stream = File.Create(localPath))
@@ -409,6 +469,9 @@ public class TempDiagramService
         int month,
         int forecastStartDay)
     {
+        if (modelData.Count == 0)
+            return forecastStartDay - 1;
+        
         return modelData
             .Where(k => k.Key.Year == year && k.Key.Month == month && k.Key.Day >= forecastStartDay && k.Value.count > 0)
             .Select(k => new { Day = k.Key.Day, Mean = k.Value.temp / k.Value.count })
