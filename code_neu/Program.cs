@@ -200,9 +200,10 @@ if (forecastStatus.MissingModels.Count > 0)
             today);
 
         tempDiagramService.CreateTempDiagram(
-            mosmix,
-            omData,
-            today);
+    mosmix,
+    omData,
+    forecastStatus,
+    today);
     }
 
     static async Task Main()
