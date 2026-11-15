@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -29,49 +30,111 @@ class Program
         return "12z";
     }
 
+    private static DateTime DetectRunUtc()
+    {
+        var tzBerlin = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+        var nowBerlin = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tzBerlin);
+
+        int runHour =
+            nowBerlin.TimeOfDay < new TimeSpan(12, 0, 0) ? 0 :
+            nowBerlin.TimeOfDay < new TimeSpan(19, 0, 0) ? 6 :
+            12;
+
+        return new DateTime(
+            nowBerlin.Year,
+            nowBerlin.Month,
+            nowBerlin.Day,
+            runHour,
+            0,
+            0,
+            DateTimeKind.Utc);
+    }
+
     static async Task RunForecastAsync()
     {
         Environment.CurrentDirectory = AppContext.BaseDirectory;
 
-        // TEST...
-        //using var client_test = new HttpClient();
-
-        //try
-        //{
-        //    var result = await client_test.GetStringAsync(
-        //    "https://api.open-meteo.com/v1/forecast?latitude=50&longitude=7&daily=precipitation_sum&forecast_days=1");
-
-        //    Console.WriteLine("TEST OK");
-        //}
-        //catch (Exception ex)
-        //{
-        //    Console.WriteLine(ex.ToString());
-        //}
-        // ...TEST
-
         DateTime today = DateTime.Today;
 
-        string? run = DetectRun();
-
-        if (run == null)
-            return;
+        string run = DetectRun();
+        DateTime runUtc = DetectRunUtc();
 
         using var client = new HttpClient();
         client.Timeout = TimeSpan.FromSeconds(60);
 
+        var availabilityService =
+            new ModelRunAvailabilityService(client);
+
+        ForecastStatus forecastStatus =
+            await availabilityService.CheckRunAsync(
+                ModelIds,
+                runUtc);
+
+        Console.WriteLine();
+        Console.WriteLine("======================================");
+        Console.WriteLine($"Run: {run}");
+        Console.WriteLine($"Run UTC: {runUtc:yyyy-MM-dd HH:mm}");
+        Console.WriteLine($"Verfügbarkeit: {forecastStatus.PercentAvailable:F1}%");
+        Console.WriteLine("======================================");
+
+        foreach (var model in forecastStatus.ModelStatuses)
+        {
+            Console.WriteLine(
+                $"{model.ModelName}: " +
+                $"{model.AvailableHours}/{model.ExpectedHours} " +
+                $"Complete={model.Complete}");
+        }
+
+        var availableModels =
+            forecastStatus.ModelStatuses
+            .Where(x => x.Complete)
+            .Select(x => x.ModelName)
+            .ToList();
+
+        Console.WriteLine();
+        Console.WriteLine("Verwendete Modelle:");
+
+        foreach (var model in availableModels)
+        {
+            Console.WriteLine($" - {model}");
+        }
+
+        if (availableModels.Count == 0)
+        {
+            Console.WriteLine();
+            Console.WriteLine("Kein Modell vollständig verfügbar.");
+            return;
+        }
+
         var mosmixService = new MosmixService(run);
         var mosmix = mosmixService.LoadMosmixDataLatest(today);
 
-        var omService = new OpenMeteoService(client, ModelIds);
-        var omData = await omService.LoadOpenMeteoData(today);
+        var omService = new OpenMeteoService(
+            client,
+            ModelIds);
+
+        var omData =
+            await omService.LoadOpenMeteoData(
+                today,
+                availableModels);
 
         var sunDiagramService = new SunDiagramService(run);
         var rainDiagramService = new RainDiagramService(run);
         var tempDiagramService = new TempDiagramService(run);
 
-        sunDiagramService.CreateSunDiagram(mosmix, today);
-        rainDiagramService.CreateRainDiagram(mosmix, omData, today);
-        tempDiagramService.CreateTempDiagram(mosmix, omData, today);
+        sunDiagramService.CreateSunDiagram(
+            mosmix,
+            today);
+
+        rainDiagramService.CreateRainDiagram(
+            mosmix,
+            omData,
+            today);
+
+        tempDiagramService.CreateTempDiagram(
+            mosmix,
+            omData,
+            today);
     }
 
     static async Task Main()
