@@ -123,6 +123,20 @@ if (enabledModels.ContainsKey("GEM"))
     gemFirstUtc = await FetchFirstHourlyUtc(
         51.0, 10.0, enabledModels["GEM"]);
 
+        foreach (var modelName in _modelIds.Keys)
+{
+    if (!aggRain.ContainsKey(modelName))
+    {
+        aggRain[modelName] =
+            new Dictionary<DateTime, (double rain, int count)>();
+    }
+
+    if (!aggTemp.ContainsKey(modelName))
+    {
+        aggTemp[modelName] =
+            new Dictionary<DateTime, (double temp, int count)>();
+    }
+}
         var data = new OpenMeteoData
         {
             Rain = aggRain,
