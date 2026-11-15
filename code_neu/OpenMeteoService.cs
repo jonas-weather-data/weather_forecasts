@@ -207,7 +207,7 @@ if (enabledModels.ContainsKey("GEM"))
     // ============================================================
     // Temperatur-Hilfsfunktion
     // ============================================================
-    public (List<int> days, List<double> cumMeans, Dictionary<int, double> dayMeans)
+    public static (List<int> days, List<double> cumMeans, Dictionary<int, double> dayMeans)
     BuildTempSeries(
         Dictionary<DateTime, (double temp, int count)> modelData,
         int lastObsDay,
