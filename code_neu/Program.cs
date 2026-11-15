@@ -65,10 +65,44 @@ class Program
         var availabilityService =
             new ModelRunAvailabilityService(client);
 
-        ForecastStatus forecastStatus =
-            await availabilityService.CheckRunAsync(
-                ModelIds,
-                runUtc);
+        var retryService = new RetryStateService();
+
+string runId =
+    runUtc.ToString("yyyy-MM-ddTHH:mm");
+
+var retryState = retryService.Load();
+
+if (retryState.RunId != runId)
+{
+    retryState = new RetryState
+    {
+        RunId = runId,
+        Attempt = 1,
+        Finished = false,
+        LastUpdateUtc = DateTime.UtcNow
+    };
+}
+else if (!retryState.Finished)
+{
+    retryState.Attempt++;
+    retryState.LastUpdateUtc = DateTime.UtcNow;
+}
+
+if (retryState.Finished)
+{
+    Console.WriteLine(
+        $"Lauf {runId} bereits abgeschlossen.");
+
+    return;
+}
+
+ForecastStatus forecastStatus =
+    await availabilityService.CheckRunAsync(
+        ModelIds,
+        runUtc);
+
+forecastStatus.FinalAttempt =
+    retryState.Attempt >= 3;
 
         Console.WriteLine();
         Console.WriteLine("======================================");
@@ -99,12 +133,34 @@ class Program
             Console.WriteLine($" - {model}");
         }
 
+        Console.WriteLine();
+Console.WriteLine(
+    $"Versuch: {retryState.Attempt}/3");
+
+if (forecastStatus.MissingModels.Count > 0)
+{
+    Console.WriteLine();
+    Console.WriteLine("Fehlende Modelle:");
+
+    foreach (var model in forecastStatus.MissingModels)
+    {
+        Console.WriteLine($" - {model}");
+    }
+}
+
         if (availableModels.Count == 0)
         {
             Console.WriteLine();
             Console.WriteLine("Kein Modell vollständig verfügbar.");
             return;
         }
+
+        if (forecastStatus.AllDataAvailable)
+{
+    retryState.Finished = true;
+
+    retryService.Save(retryState);
+}
 
         var mosmixService = new MosmixService(run);
         var mosmix = mosmixService.LoadMosmixDataLatest(today);
@@ -122,9 +178,21 @@ class Program
         var rainDiagramService = new RainDiagramService(run);
         var tempDiagramService = new TempDiagramService(run);
 
+        if (!forecastStatus.AllDataAvailable)
+
         sunDiagramService.CreateSunDiagram(
             mosmix,
             today);
+
+        {
+    retryState.Finished =
+        retryState.Attempt >= 3;
+
+    retryState.LastUpdateUtc =
+        DateTime.UtcNow;
+
+    retryService.Save(retryState);
+}
 
         rainDiagramService.CreateRainDiagram(
             mosmix,
