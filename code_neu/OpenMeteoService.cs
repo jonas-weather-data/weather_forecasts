@@ -68,7 +68,9 @@ public class OpenMeteoService
         return DateTime.Parse(timeArr[0].GetString()!, CultureInfo.InvariantCulture);
     }
 
-    public async Task<OpenMeteoData> LoadOpenMeteoData(DateTime today)
+    public async Task<OpenMeteoData> LoadOpenMeteoData(
+    DateTime today,
+    IEnumerable<string> modelsToLoad)
     {
         int year = today.Year;
         int month = today.Month;
@@ -79,18 +81,47 @@ public class OpenMeteoService
         var targetDates = Enumerable.Range(todayDay, daysInMonth - todayDay + 1)
                                     .Select(d => new DateTime(year, month, d))
                                     .ToList();
+        var enabledModels = _modelIds
+                                .Where(x => modelsToLoad.Contains(x.Key))
+                                .ToDictionary(x => x.Key, x => x.Value);
 
-        var om = new OpenMeteoAggregator(_client, _modelIds);
+        var om = new OpenMeteoAggregator(
+                        _client,
+                        enabledModels);
 
         var aggRain = await om.AggregateRainAsync(grid, targetDates);
         var aggTemp = await om.AggregateTempAsync(grid, targetDates);
 
-        var iconFirstUtc = await FetchFirstHourlyUtc(51.0, 10.0, _modelIds["ICON"]);
-        var gfsFirstUtc = await FetchFirstHourlyUtc(51.0, 10.0, _modelIds["GFS"]);
-        var ifsFirstUtc = await FetchFirstHourlyUtc(51.0, 10.0, _modelIds["IFS"]);
-        var aifsFirstUtc = await FetchFirstHourlyUtc(51.0, 10.0, _modelIds["AIFS"]);
-        var ukmoFirstUtc = await FetchFirstHourlyUtc(51.0, 10.0, _modelIds["UKMO"]);
-        var gemFirstUtc = await FetchFirstHourlyUtc(51.0, 10.0, _modelIds["GEM"]);
+        DateTime? iconFirstUtc = null;
+DateTime? gfsFirstUtc = null;
+DateTime? ifsFirstUtc = null;
+DateTime? aifsFirstUtc = null;
+DateTime? ukmoFirstUtc = null;
+DateTime? gemFirstUtc = null;
+
+if (enabledModels.ContainsKey("ICON"))
+    iconFirstUtc = await FetchFirstHourlyUtc(
+        51.0, 10.0, enabledModels["ICON"]);
+
+if (enabledModels.ContainsKey("GFS"))
+    gfsFirstUtc = await FetchFirstHourlyUtc(
+        51.0, 10.0, enabledModels["GFS"]);
+
+if (enabledModels.ContainsKey("IFS"))
+    ifsFirstUtc = await FetchFirstHourlyUtc(
+        51.0, 10.0, enabledModels["IFS"]);
+
+if (enabledModels.ContainsKey("AIFS"))
+    aifsFirstUtc = await FetchFirstHourlyUtc(
+        51.0, 10.0, enabledModels["AIFS"]);
+
+if (enabledModels.ContainsKey("UKMO"))
+    ukmoFirstUtc = await FetchFirstHourlyUtc(
+        51.0, 10.0, enabledModels["UKMO"]);
+
+if (enabledModels.ContainsKey("GEM"))
+    gemFirstUtc = await FetchFirstHourlyUtc(
+        51.0, 10.0, enabledModels["GEM"]);
 
         var data = new OpenMeteoData
         {
@@ -225,10 +256,10 @@ public class OpenMeteoData
     public Dictionary<string, Dictionary<DateTime, (double rain, int count)>> Rain { get; set; }
     public Dictionary<string, Dictionary<DateTime, (double temp, int count)>> Temp { get; set; }
 
-    public DateTime IconFirstUtc { get; set; }
-    public DateTime GfsFirstUtc { get; set; }
-    public DateTime IfsFirstUtc { get; set; }
-    public DateTime AifsFirstUtc { get; set; }
-    public DateTime UkmoFirstUtc { get; set; }
-    public DateTime GemFirstUtc { get; set; }
+    public DateTime? IconFirstUtc { get; set; }
+public DateTime? GfsFirstUtc { get; set; }
+public DateTime? IfsFirstUtc { get; set; }
+public DateTime? AifsFirstUtc { get; set; }
+public DateTime? UkmoFirstUtc { get; set; }
+public DateTime? GemFirstUtc { get; set; }
 }
