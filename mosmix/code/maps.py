@@ -108,6 +108,9 @@ def create_all_maps(data):
 
     print("Erstelle Deutschlandkarten ...")
 
+    if isinstance(data, tuple):
+        data = data[0]
+
     if data.empty:
         raise ValueError(
             "Keine Prognosedaten für die Kartenerstellung vorhanden."
