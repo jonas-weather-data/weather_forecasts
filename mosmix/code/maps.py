@@ -3,7 +3,6 @@ import os
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
-import pandas as pd
 from matplotlib.cm import ScalarMappable
 
 from config import (
@@ -64,13 +63,9 @@ def create_map(data, parameter, day, column, filename, cumulative=False):
 
     unit = PARAMETERS[parameter]["name"]
 
-    title = (
-        f"{NAMES[parameter].capitalize()} – Tag {day}"
-        + (" (kumuliert)" if cumulative else "")
-    )
-
     ax.set_title(
-        title,
+        f"{NAMES[parameter].capitalize()} – Tag {day}"
+        + (" (kumuliert)" if cumulative else ""),
         fontsize=17,
         pad=15
     )
@@ -101,7 +96,7 @@ def create_map(data, parameter, day, column, filename, cumulative=False):
 
     plt.close(fig)
 
-    print(f"Erstellt: {filename}.png")
+    print(f"Erstellt: {output_path}")
 
 
 def create_all_maps(data):
@@ -116,49 +111,47 @@ def create_all_maps(data):
             "Keine Prognosedaten für die Kartenerstellung vorhanden."
         )
 
-    # Tageskarten
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    required_columns = {
+        "latitude",
+        "longitude"
+    }
+
+    missing = required_columns - set(data.columns)
+
+    if missing:
+        raise ValueError(
+            "Fehlende Stationskoordinaten: "
+            + ", ".join(sorted(missing))
+        )
+
+    created = 0
+
     for parameter, name in NAMES.items():
 
         if parameter not in data.columns:
             continue
 
-        for day in range(1, 11):
-
-            column = f"{parameter}_tag{day}"
-
-            if column not in data.columns:
-                continue
-
-            create_map(
-                data=data,
-                parameter=parameter,
-                day=day,
-                column=column,
-                filename=f"{name}_tag{day}"
-            )
-
-    # Kumulierte Niederschlags- und Sonnenscheinkarten
-    for parameter in ("RR1c", "SunD1"):
-
-        if parameter not in data.columns:
+        if data[parameter].notna().sum() == 0:
             continue
 
-        name = NAMES[parameter]
+        create_map(
+            data=data,
+            parameter=parameter,
+            day=1,
+            column=parameter,
+            filename=f"{name}_tag1"
+        )
 
-        for day in range(1, 11):
+        created += 1
 
-            column = f"{parameter}_bis_tag{day}"
+    if created == 0:
+        raise RuntimeError(
+            "Keine Karten erstellt. "
+            "Keine gültigen Parameterwerte vorhanden."
+        )
 
-            if column not in data.columns:
-                continue
-
-            create_map(
-                data=data,
-                parameter=parameter,
-                day=day,
-                column=column,
-                filename=f"{name}_bis_tag{day}",
-                cumulative=True
-            )
-
+    print(f"{created} Karten erfolgreich erstellt.")
+    print(f"Ausgabeordner: {OUTPUT_DIR}")
     print("Alle Karten wurden erstellt.")
