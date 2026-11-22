@@ -52,7 +52,7 @@ def create_map(data, parameter, day, column, filename, cumulative=False):
     else:
         norm = get_parameter_norm(parameter)
 
-    scatter = ax.scatter(
+    ax.scatter(
         values["longitude"],
         values["latitude"],
         c=values[column],
@@ -64,9 +64,13 @@ def create_map(data, parameter, day, column, filename, cumulative=False):
 
     unit = PARAMETERS[parameter]["name"]
 
-    ax.set_title(
+    title = (
         f"{NAMES[parameter].capitalize()} – Tag {day}"
-        + (" (kumuliert)" if cumulative else ""),
+        + (" (kumuliert)" if cumulative else "")
+    )
+
+    ax.set_title(
+        title,
         fontsize=17,
         pad=15
     )
@@ -104,8 +108,16 @@ def create_all_maps(data):
 
     print("Erstelle Deutschlandkarten ...")
 
+    if data.empty:
+        raise ValueError(
+            "Keine Prognosedaten für die Kartenerstellung vorhanden."
+        )
+
     # Tageskarten
     for parameter, name in NAMES.items():
+
+        if parameter not in data.columns:
+            continue
 
         for day in range(1, 11):
 
@@ -124,6 +136,9 @@ def create_all_maps(data):
 
     # Kumulierte Niederschlags- und Sonnenscheinkarten
     for parameter in ("RR1c", "SunD1"):
+
+        if parameter not in data.columns:
+            continue
 
         name = NAMES[parameter]
 
