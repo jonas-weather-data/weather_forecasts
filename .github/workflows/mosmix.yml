@@ -28,7 +28,7 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: MOSMIX-Karten erstellen
-        run: python weather_forecasts/mosmix/code/main.py
+        run: python mosmix/code/main.py
 
       - name: Erzeugte Grafiken prüfen
         run: |
