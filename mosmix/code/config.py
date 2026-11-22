@@ -23,9 +23,13 @@ DATA_DIR = os.path.join(
     "data"
 )
 
-OUTPUT_DIR = os.path.join(
-    BASE_DIR,
-    "output"
+OUTPUT_DIR = os.path.abspath(
+    os.path.join(
+        BASE_DIR,
+        "..",
+        "output",
+        "germany"
+    )
 )
 
 STATION_FILE = os.path.join(
