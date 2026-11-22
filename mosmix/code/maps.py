@@ -1,28 +1,38 @@
 
 import os
+
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.cm import ScalarMappable
 
 from config import (
     OUTPUT_DIR,
     SHAPEFILE,
+    PARAMETERS,
     get_parameter_cmap,
     get_parameter_norm,
-    get_period_norm,
-    get_contrast_text_color
+    get_period_norm
 )
 
 
-def create_map(data, parameter, day, filename):
+NAMES = {
+    "TTT": "mittel",
+    "RR1c": "niederschlag",
+    "FX1": "wind",
+    "TX": "tmax",
+    "TN": "tmin",
+    "SunD1": "sonne"
+}
+
+
+def create_map(data, parameter, day, column, filename, cumulative=False):
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     germany = gpd.read_file(SHAPEFILE)
 
-    fig, ax = plt.subplots(
-        figsize=(12, 14)
-    )
+    fig, ax = plt.subplots(figsize=(12, 14))
 
     germany.plot(
         ax=ax,
@@ -32,36 +42,54 @@ def create_map(data, parameter, day, filename):
     )
 
     values = data.dropna(
-        subset=["latitude", "longitude", parameter]
+        subset=["latitude", "longitude", column]
     )
 
     cmap = get_parameter_cmap(parameter)
 
-    norm = get_parameter_norm(parameter)
+    if cumulative:
+        norm = get_period_norm(parameter, day)
+    else:
+        norm = get_parameter_norm(parameter)
 
-    ax.scatter(
+    scatter = ax.scatter(
         values["longitude"],
         values["latitude"],
-        c=values[parameter],
+        c=values[column],
         cmap=cmap,
         norm=norm,
-        s=12,
+        s=16,
         edgecolors="none"
     )
 
+    unit = PARAMETERS[parameter]["name"]
+
     ax.set_title(
-        f"{parameter} – Tag {day}",
-        fontsize=16
+        f"{NAMES[parameter].capitalize()} – Tag {day}"
+        + (" (kumuliert)" if cumulative else ""),
+        fontsize=17,
+        pad=15
     )
 
-    ax.axis("off")
+    colorbar = fig.colorbar(
+        ScalarMappable(norm=norm, cmap=cmap),
+        ax=ax,
+        shrink=0.75,
+        pad=0.02
+    )
+
+    colorbar.set_label(unit)
+
+    ax.set_axis_off()
+
+    fig.tight_layout()
 
     output_path = os.path.join(
         OUTPUT_DIR,
-        filename
+        filename + ".png"
     )
 
-    plt.savefig(
+    fig.savefig(
         output_path,
         dpi=150,
         bbox_inches="tight"
@@ -69,4 +97,50 @@ def create_map(data, parameter, day, filename):
 
     plt.close(fig)
 
-    print(f"Gespeichert: {output_path}")
+    print(f"Erstellt: {filename}.png")
+
+
+def create_all_maps(data):
+
+    print("Erstelle Deutschlandkarten ...")
+
+    # Tageskarten
+    for parameter, name in NAMES.items():
+
+        for day in range(1, 11):
+
+            column = f"{parameter}_tag{day}"
+
+            if column not in data.columns:
+                continue
+
+            create_map(
+                data=data,
+                parameter=parameter,
+                day=day,
+                column=column,
+                filename=f"{name}_tag{day}"
+            )
+
+    # Kumulierte Niederschlags- und Sonnenscheinkarten
+    for parameter in ("RR1c", "SunD1"):
+
+        name = NAMES[parameter]
+
+        for day in range(1, 11):
+
+            column = f"{parameter}_bis_tag{day}"
+
+            if column not in data.columns:
+                continue
+
+            create_map(
+                data=data,
+                parameter=parameter,
+                day=day,
+                column=column,
+                filename=f"{name}_bis_tag{day}",
+                cumulative=True
+            )
+
+    print("Alle Karten wurden erstellt.")
