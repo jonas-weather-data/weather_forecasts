@@ -6,54 +6,116 @@ permissions:
 
 on:
   workflow_dispatch:
+
   repository_dispatch:
-    types: [mosmix-update]
+    types:
+      - mosmix-update
+
+# Verhindert parallele Läufe, die sich beim Push überschneiden könnten.
+concurrency:
+  group: dwd-mosmix-germany
+  cancel-in-progress: false
 
 jobs:
   generate:
     runs-on: ubuntu-latest
 
     steps:
+
+      # ------------------------------------------------------
+      # 1. REPOSITORY AUSCHECKEN
+      # ------------------------------------------------------
+
       - name: Repository auschecken
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ------------------------------------------------------
+      # 2. PYTHON EINRICHTEN
+      # ------------------------------------------------------
 
       - name: Python einrichten
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      # ------------------------------------------------------
+      # 3. ABHÄNGIGKEITEN INSTALLIEREN
+      # ------------------------------------------------------
 
       - name: Python-Abhängigkeiten installieren
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
 
+      # ------------------------------------------------------
+      # 4. MOSMIX-KARTEN ERSTELLEN
+      # ------------------------------------------------------
+
       - name: MOSMIX-Karten erstellen
-        run: python mosmix/code/main_germany.py
+        run: |
+          python mosmix/code/main_germany.py
+
+      # ------------------------------------------------------
+      # 5. ERZEUGTE GRAFIKEN PRÜFEN
+      # ------------------------------------------------------
 
       - name: Erzeugte Grafiken prüfen
         run: |
-          if [ ! -d mosmix/output/germany ]; then
+
+          OUTPUT_DIR="mosmix/output/germany"
+
+          if [ ! -d "$OUTPUT_DIR" ]; then
             echo "Ausgabeordner fehlt."
             exit 1
           fi
 
-          count=$(find mosmix/output/germany -maxdepth 1 -name '*.png' | wc -l)
+          count=$(find "$OUTPUT_DIR" -maxdepth 1 -type f -name '*.png' | wc -l)
 
           if [ "$count" -eq 0 ]; then
             echo "Keine Grafiken erzeugt."
             exit 1
           fi
 
-          echo "$count Grafiken erzeugt."
+          echo "$count Grafiken erfolgreich erzeugt."
+
+          echo "Dateien:"
+          ls -lh "$OUTPUT_DIR"
+
+      # ------------------------------------------------------
+      # 6. GITHUB IDENTITÄT KONFIGURIEREN
+      # ------------------------------------------------------
+
+      - name: Git konfigurieren
+        run: |
+
+          git config user.name "github-actions[bot]"
+
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # ------------------------------------------------------
+      # 7. GRAFIKEN COMMITTEN UND PUSHEN
+      # ------------------------------------------------------
 
       - name: Grafiken committen und pushen
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add mosmix/output/germany/
 
-          git commit -m "DWD MOSMIX-Prognosekarten aktualisieren" \
-            || echo "Keine Änderungen vorhanden."
+          if git diff --cached --quiet; then
 
-          git push origin HEAD:main
+            echo "Keine Änderungen an den Prognosekarten."
+
+          else
+
+            git commit -m "DWD MOSMIX-Prognosekarten aktualisieren"
+
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+
+            echo "Prognosekarten erfolgreich ins Repository übertragen."
+
+          fi
