@@ -1,6 +1,8 @@
+numpy
+scipy
+pyproj
+shapely>=2.0,<2.1
 requests
 pandas
-matplotlib
 geopandas
-shapely
-numpy
+matplotlib
