@@ -1,18 +1,13 @@
-
+import os
 import zipfile
 import math
-from io import BytesIO
 
-import numpy as np
 import pandas as pd
+import numpy as np
 import xml.etree.ElementTree as ET
 
 from config import PARAMETERS, STATION_FILE
 
-
-# ============================================================
-# XML-NAMESPACES – WIE IM ORIGINALCODE
-# ============================================================
 
 NS = {
     "kml": "http://www.opengis.net/kml/2.2",
@@ -23,47 +18,28 @@ NS = {
 }
 
 
-# ============================================================
-# MOSMIX-ZEITSTEMPEL
-# ============================================================
-
 def parse_time_steps(root):
 
     time_steps = []
 
-    for node in root.findall(
-        ".//dwd:TimeStep",
-        NS
-    ):
+    for node in root.findall(".//dwd:TimeStep", NS):
 
         try:
-
             timestamp = pd.to_datetime(
                 node.text.strip(),
                 utc=True
-            )
-
-            timestamp = timestamp.tz_convert(
-                "Europe/Berlin"
-            )
+            ).tz_convert("Europe/Berlin")
 
             time_steps.append(timestamp)
 
-        except Exception:
+        except (AttributeError, ValueError, TypeError):
             continue
 
     if not time_steps:
-
-        raise RuntimeError(
-            "Keine MOSMIX-Zeitstempel gefunden."
-        )
+        raise RuntimeError("Keine MOSMIX-Zeitstempel gefunden.")
 
     return time_steps
 
-
-# ============================================================
-# MOSMIX-WERTE PARSEN
-# ============================================================
 
 def parse_forecast_values(value_text):
 
@@ -75,31 +51,76 @@ def parse_forecast_values(value_text):
     for token in value_text.split():
 
         try:
-
-            value = float(
-                token.replace(",", ".")
-            )
-
+            value = float(token.replace(",", "."))
         except ValueError:
-
             result.append(None)
             continue
 
         if not math.isfinite(value) or value <= -900:
-
             result.append(None)
-            continue
-
-        result.append(value)
+        else:
+            result.append(value)
 
     return result
 
 
-# ============================================================
-# STATIONSDATEN LADEN
-# ============================================================
+def parse_issue_time(root):
+
+    node = root.find(
+        ".//dwd:ProductDefinition/dwd:IssueTime",
+        NS
+    )
+
+    if node is None or not node.text:
+        raise RuntimeError("MOSMIX IssueTime nicht gefunden.")
+
+    return pd.to_datetime(
+        node.text.strip(),
+        utc=True
+    )
+
+
+def get_forecast_dates(file_path):
+
+    with zipfile.ZipFile(file_path) as archive:
+
+        kml_files = [
+            name for name in archive.namelist()
+            if name.lower().endswith(".kml")
+        ]
+
+        if not kml_files:
+            raise RuntimeError("Keine KML-Datei in KMZ gefunden.")
+
+        with archive.open(kml_files[0]) as stream:
+            root = ET.parse(stream).getroot()
+
+    time_steps = parse_time_steps(root)
+
+    today = pd.Timestamp.now(
+        tz="Europe/Berlin"
+    ).date()
+
+    last_day = today + pd.Timedelta(days=9)
+
+    dates = sorted({
+        timestamp.date()
+        for timestamp in time_steps
+        if today <= timestamp.date() <= last_day
+    })
+
+    if not dates:
+        raise RuntimeError("Keine zukünftigen Prognosetage gefunden.")
+
+    return dates
+
 
 def load_stations():
+
+    if not os.path.exists(STATION_FILE):
+        raise FileNotFoundError(
+            f"Datei nicht gefunden: {STATION_FILE}"
+        )
 
     stations = pd.read_csv(
         STATION_FILE,
@@ -117,43 +138,40 @@ def load_stations():
     required = {
         "mosmix_code",
         "station_id",
-        "latitude",
-        "longitude",
         "name",
-        "bundesland"
+        "bundesland",
+        "latitude",
+        "longitude"
     }
 
     missing = required - set(stations.columns)
 
     if missing:
-
         raise ValueError(
             "Fehlende Spalten in stationsdaten.csv: "
             + ", ".join(sorted(missing))
         )
 
-    stations["mosmix_code"] = (
-        stations["mosmix_code"].str.strip()
-    )
-
-    stations["station_id"] = (
-        stations["station_id"].str.strip()
-    )
+    for column in (
+        "mosmix_code",
+        "station_id",
+        "name",
+        "bundesland"
+    ):
+        stations[column] = stations[column].str.strip()
 
     for column in ("latitude", "longitude"):
-
         stations[column] = pd.to_numeric(
-            stations[column].str.replace(
-                ",",
-                ".",
-                regex=False
-            ),
+            stations[column].str.replace(",", ".", regex=False),
             errors="coerce"
         )
 
-    stations = stations.dropna(
-        subset=["latitude", "longitude"]
-    )
+    stations = stations[
+        (stations["mosmix_code"] != "")
+        & (stations["bundesland"] != "")
+        & stations["latitude"].notna()
+        & stations["longitude"].notna()
+    ].copy()
 
     stations = stations.drop_duplicates(
         subset="mosmix_code",
@@ -163,10 +181,6 @@ def load_stations():
     return stations
 
 
-# ============================================================
-# EINZELNE MOSMIX-STATION VERARBEITEN
-# ============================================================
-
 def process_placemark(
     placemark,
     time_steps,
@@ -174,29 +188,21 @@ def process_placemark(
     target_date
 ):
 
-    name_node = placemark.find(
-        "kml:name",
-        NS
-    )
+    name_node = placemark.find("kml:name", NS)
 
     if name_node is None or not name_node.text:
         return None
 
     mosmix_code = name_node.text.strip()
 
-    station_info = station_lookup.get(
-        mosmix_code
-    )
+    station_info = station_lookup.get(mosmix_code)
 
     if station_info is None:
         return None
 
     forecasts = {}
 
-    for forecast in placemark.findall(
-        ".//dwd:Forecast",
-        NS
-    ):
+    for forecast in placemark.findall(".//dwd:Forecast", NS):
 
         element_name = forecast.get(
             "{" + NS["dwd"] + "}elementName"
@@ -205,17 +211,12 @@ def process_placemark(
         if element_name not in PARAMETERS:
             continue
 
-        value_node = forecast.find(
-            "dwd:value",
-            NS
-        )
+        value_node = forecast.find("dwd:value", NS)
 
         if value_node is None:
             continue
 
-        values = parse_forecast_values(
-            value_node.text
-        )
+        values = parse_forecast_values(value_node.text)
 
         if len(values) != len(time_steps):
             continue
@@ -243,18 +244,13 @@ def process_placemark(
         values = forecasts.get(parameter)
 
         if values is None:
-
-            result[parameter] = None
+            result[parameter] = np.nan
             continue
 
         selected = []
-
         window_hours = settings["window_hours"]
 
-        for timestamp, value in zip(
-            time_steps,
-            values
-        ):
+        for timestamp, value in zip(time_steps, values):
 
             if value is None:
                 continue
@@ -262,42 +258,29 @@ def process_placemark(
             if window_hours == 12:
 
                 interval_start = (
-                    timestamp
-                    - pd.Timedelta(hours=12)
+                    timestamp - pd.Timedelta(hours=12)
                 )
 
-                if (
-                    timestamp > day_start
-                    and interval_start < day_end
-                ):
+                if timestamp > day_start and interval_start < day_end:
                     selected.append(value)
 
             elif window_hours == 0:
 
-                if (
-                    timestamp >= day_start
-                    and timestamp < day_end
-                ):
+                if day_start <= timestamp < day_end:
                     selected.append(value)
 
             else:
 
-                if (
-                    timestamp > day_start
-                    and timestamp <= day_end
-                ):
+                if day_start < timestamp <= day_end:
                     selected.append(value)
 
         if not selected:
-
-            result[parameter] = None
+            result[parameter] = np.nan
             continue
 
         if window_hours != 12:
 
-            expected_hours = (
-                24 if window_hours == 1 else 0
-            )
+            expected_hours = 24 if window_hours == 1 else 0
 
             if (
                 expected_hours > 0
@@ -306,32 +289,19 @@ def process_placemark(
                     tz="Europe/Berlin"
                 ).date()
             ):
-
-                result[parameter] = None
+                result[parameter] = np.nan
                 continue
 
         conversion = settings["conversion"]
 
         if conversion == "kelvin":
-
-            selected = [
-                value - 273.15
-                for value in selected
-            ]
+            selected = [value - 273.15 for value in selected]
 
         elif conversion == "seconds_to_hours":
-
-            selected = [
-                value / 3600.0
-                for value in selected
-            ]
+            selected = [value / 3600.0 for value in selected]
 
         elif conversion == "ms_to_kmh":
-
-            selected = [
-                value * 3.6
-                for value in selected
-            ]
+            selected = [value * 3.6 for value in selected]
 
         aggregation = settings["aggregation"]
 
@@ -348,68 +318,32 @@ def process_placemark(
             final_value = sum(selected)
 
         else:
-            final_value = None
+            final_value = np.nan
 
         result[parameter] = final_value
 
     return result
 
 
-# ============================================================
-# MOSMIX VERARBEITEN
-# ============================================================
-
 def process_mosmix(file_path, target_date=None):
 
     print("Verarbeite MOSMIX-Prognosedaten ...")
 
-    # --------------------------------------------------------
-    # KMZ ÖFFNEN
-    # --------------------------------------------------------
-
     with zipfile.ZipFile(file_path) as archive:
 
         kml_files = [
-            name
-            for name in archive.namelist()
+            name for name in archive.namelist()
             if name.lower().endswith(".kml")
         ]
 
         if not kml_files:
+            raise RuntimeError("Keine KML-Datei in KMZ gefunden.")
 
-            raise RuntimeError(
-                "Keine KML-Datei in KMZ gefunden."
-            )
+        with archive.open(kml_files[0]) as stream:
+            root = ET.parse(stream).getroot()
 
-        with archive.open(kml_files[0]) as file:
-
-            root = ET.parse(file).getroot()
-
-    # --------------------------------------------------------
-    # ZEITSTEMPEL
-    # --------------------------------------------------------
-
+    issue_time = parse_issue_time(root)
     time_steps = parse_time_steps(root)
-
-    print(
-        f"{len(time_steps)} Prognosezeitpunkte gefunden."
-    )
-
-    # --------------------------------------------------------
-    # PROGNOSETAGE
-    # --------------------------------------------------------
-
-    if target_date is None:
-
-        today = pd.Timestamp.now(
-            tz="Europe/Berlin"
-        ).date()
-
-        target_date = today
-
-    # --------------------------------------------------------
-    # STATIONSDATEN
-    # --------------------------------------------------------
 
     stations = load_stations()
 
@@ -419,18 +353,12 @@ def process_mosmix(file_path, target_date=None):
         .to_dict("index")
     )
 
-    # --------------------------------------------------------
-    # MOSMIX-STATIONEN
-    # --------------------------------------------------------
+    placemarks = root.findall(".//kml:Placemark", NS)
 
-    placemarks = root.findall(
-        ".//kml:Placemark",
-        NS
-    )
-
-    print(
-        f"{len(placemarks)} MOSMIX-Stationen gefunden."
-    )
+    if target_date is None:
+        target_date = pd.Timestamp.now(
+            tz="Europe/Berlin"
+        ).date()
 
     results = []
 
@@ -447,16 +375,10 @@ def process_mosmix(file_path, target_date=None):
             results.append(result)
 
     if not results:
-
-        raise RuntimeError(
-            "Keine Stationen konnten verarbeitet werden. "
-            "Bitte MOSMIX-Codes in stationsdaten.csv prüfen."
-        )
+        raise RuntimeError("Keine Stationen konnten verarbeitet werden.")
 
     forecast = pd.DataFrame(results)
 
-    print(
-        f"{len(forecast)} Stationen verarbeitet."
-    )
+    print(f"{len(forecast)} Stationen verarbeitet.")
 
-    return forecast
+    return forecast, issue_time
