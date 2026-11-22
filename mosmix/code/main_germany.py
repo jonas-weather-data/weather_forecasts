@@ -1,4 +1,3 @@
-
 import os
 import math
 import zipfile
@@ -39,10 +38,17 @@ MOSMIX_URL = (
     "MOSMIX_S_LATEST_240.kmz"
 )
 
+# Verzeichnis dieser Python-Datei:
 BASE_DIR = os.path.dirname(
     os.path.abspath(__file__)
 )
 
+# Hauptverzeichnis des GitHub-Repositories:
+REPO_DIR = os.path.dirname(
+    os.path.dirname(BASE_DIR)
+)
+
+# Eingabedateien bleiben neben main_germany.py:
 STATION_FILE = os.path.join(
     BASE_DIR,
     "stationsdaten.csv"
@@ -53,13 +59,12 @@ SHAPEFILE = os.path.join(
     "gadm41_DEU_1.json"
 )
 
-OUTPUT_DIR = os.path.abspath(
-    os.path.join(
-        BASE_DIR,
-        "..",
-        "output",
-        "germany"
-    )
+# Ausgabe direkt im vorgesehenen Repository-Verzeichnis:
+OUTPUT_DIR = os.path.join(
+    REPO_DIR,
+    "mosmix",
+    "output",
+    "germany"
 )
 
 REQUEST_TIMEOUT = 180
@@ -119,15 +124,6 @@ PARAMETERS = {
         "conversion": "ms_to_kmh"
     }
 
-}
-
-PARAMETER_FILENAMES = {
-    "RR1c": "niederschlag",
-    "SunD1": "sonne",
-    "FX1": "wind",
-    "TX": "tx",
-    "TN": "tn",
-    "TTT": "tt"
 }
 
 
@@ -2151,7 +2147,7 @@ def plot_map(
     output_file,
     number_of_days=None,
     period_start=None,
-    interpolated=False
+    interpolated=True
 ):
 
 
@@ -2363,15 +2359,6 @@ def plot_map(
             else:
 
                 text_color = "#000000"
-
-        else:
-
-            # NICHT INTERPOLIERTE KARTEN:
-            # Bisherige farbige Beschriftungen unverändert.
-
-            text_color = get_readable_text_color(
-                cmap(norm(value))
-            )
 
         ax.text(
             text_x,
@@ -2646,15 +2633,24 @@ def main():
                 parameter
             )
 
-            # --------------------------------------------
-            # TAGESKARTE – AUSSCHLIESSLICH INTERPOLIERT
-            # --------------------------------------------
+                        # ------------------------------------------------
+            # INTERPOLIERTE TAGESKARTE ERSTELLEN
+            # ------------------------------------------------
 
-            parameter_name = PARAMETER_FILENAMES[parameter]
+            parameter_names = {
+                "SunD1": "sonne",
+                "RR1c": "niederschlag",
+                "FX1": "wind",
+                "TX": "tx",
+                "TN": "tn",
+                "TTT": "tt"
+            }
+
+            map_name = parameter_names[parameter]
 
             output_file = os.path.join(
                 OUTPUT_DIR,
-                f"{parameter_name}_tag{day_number}.png"
+                f"{map_name}_tag{day_number}.png"
             )
 
             plot_map(
@@ -2756,15 +2752,20 @@ def main():
                     parameter
                 )
     
-                                # --------------------------------------------
-                # INTERPOLIERTE SUMMENKARTE
-                # --------------------------------------------
+                                # ------------------------------------------------
+                # INTERPOLIERTE SUMMENKARTE ERSTELLEN
+                # ------------------------------------------------
 
-                parameter_name = PARAMETER_FILENAMES[parameter]
+                parameter_names = {
+                    "SunD1": "sonne",
+                    "RR1c": "niederschlag"
+                }
+
+                map_name = parameter_names[parameter]
 
                 output_file = os.path.join(
                     OUTPUT_DIR,
-                    f"{parameter_name}_bis_tag{end_index}.png"
+                    f"{map_name}_bis_tag{number_of_days}.png"
                 )
 
                 plot_map(
@@ -2806,14 +2807,15 @@ def main():
         len(forecast_dates)
         * len(PARAMETERS)
     )
-
+    
     number_of_periods = max(
         0,
         len(daily_full_gdfs) - 1
     )
-
+    
     sum_map_count = (
-        number_of_periods * 2
+        number_of_periods
+        * 2
     )
     
     log(
