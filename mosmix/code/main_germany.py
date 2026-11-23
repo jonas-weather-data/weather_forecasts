@@ -2221,14 +2221,14 @@ def plot_map(
 
     summary_ax = fig.add_subplot(gs[0, 1])
 
-    # Tabellenfläche nach links verbreitern.
+    # Tabellenfläche nach links verschieben und verbreitern.
     # Die Kartenachse bleibt vollständig unverändert.
     summary_position = summary_ax.get_position()
 
     summary_ax.set_position([
-        summary_position.x0 - 0.011,
+        summary_position.x0 - 0.025,
         summary_position.y0,
-        summary_position.width + 0.011,
+        summary_position.width + 0.025,
         summary_position.height
     ])
 
