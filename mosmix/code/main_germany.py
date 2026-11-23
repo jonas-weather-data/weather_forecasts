@@ -2214,27 +2214,12 @@ def plot_map(
         height_ratios=[12, 1.25],
         width_ratios=[4.7, 1.55],
         hspace=0.06,
-        wspace=0.025
+        wspace=0.005
     )
 
     ax = fig.add_subplot(gs[0, 0])
 
     summary_ax = fig.add_subplot(gs[0, 1])
-
-    # Tabellenachse deutlich nach links verschieben.
-    # Die rechte Begrenzung bleibt unverändert.
-    summary_position = summary_ax.get_position()
-
-    summary_ax.set_position([
-        summary_position.x0 - 0.045,
-        summary_position.y0,
-        summary_position.width + 0.045,
-        summary_position.height
-    ])
-
-    # Verhindert, dass Matplotlib die Position
-    # beim Speichern erneut durch das Layout verändert.
-    summary_ax.set_in_layout(False)
 
     legend_ax = fig.add_subplot(
         gs[1, :],
