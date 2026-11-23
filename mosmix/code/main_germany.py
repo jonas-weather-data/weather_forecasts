@@ -1667,7 +1667,7 @@ def draw_state_summary(
         0.0, 0.995,
         "MOSMIX-Prognose",
         transform=ax.transAxes,
-        fontsize=10,
+        fontsize=11,
         fontweight="bold",
         va="top",
         color="#555555"
@@ -1677,7 +1677,7 @@ def draw_state_summary(
         0.0, 0.963,
         "Lauf",
         transform=ax.transAxes,
-        fontsize=9.5,
+        fontsize=10.5,
         va="top",
         color="#777777"
     )
@@ -1686,7 +1686,7 @@ def draw_state_summary(
         1.0, 0.963,
         issue_time.strftime("%d.%m.%Y %Hz"),
         transform=ax.transAxes,
-        fontsize=9.5,
+        fontsize=10.5,
         ha="right",
         va="top",
         color="#333333"
@@ -1696,7 +1696,7 @@ def draw_state_summary(
         0.0, 0.925,
         "Erstellt am",
         transform=ax.transAxes,
-        fontsize=9.5,
+        fontsize=10.5,
         va="top",
         color="#777777"
     )
@@ -1705,7 +1705,7 @@ def draw_state_summary(
         1.0, 0.925,
         created_at.strftime("%d.%m.%Y %H:%M:%S") + " Uhr",
         transform=ax.transAxes,
-        fontsize=9.5,
+        fontsize=10.5,
         ha="right",
         va="top",
         color="#333333"
@@ -1732,7 +1732,7 @@ def draw_state_summary(
         0.0, 0.845,
         "Bundesland",
         transform=ax.transAxes,
-        fontsize=10,
+        fontsize=11,
         fontweight="bold",
         va="top",
         color="#333333"
@@ -1750,7 +1750,7 @@ def draw_state_summary(
             x, 0.845,
             label,
             transform=ax.transAxes,
-            fontsize=9.5,
+            fontsize=10.5,
             fontweight="bold",
             ha="center",
             va="top",
@@ -1781,7 +1781,7 @@ def draw_state_summary(
             y,
             row["bundesland"],
             transform=ax.transAxes,
-            fontsize=9,
+            fontsize=10,
             va="center",
             color="#333333"
         )
@@ -1802,7 +1802,7 @@ def draw_state_summary(
                 y,
                 format_value(value, parameter),
                 transform=ax.transAxes,
-                fontsize=9,
+                fontsize=10,
                 ha="center",
                 va="center",
                 color="#333333"
@@ -1830,7 +1830,7 @@ def draw_state_summary(
         y,
         "Deutschland",
         transform=ax.transAxes,
-        fontsize=9.5,
+        fontsize=10.5,
         fontweight="bold",
         va="center",
         color="#222222"
@@ -1852,7 +1852,7 @@ def draw_state_summary(
             y,
             format_value(value, parameter),
             transform=ax.transAxes,
-            fontsize=9.5,
+            fontsize=10.5,
             fontweight="bold",
             ha="center",
             va="center",
@@ -1986,7 +1986,7 @@ def draw_parameter_legend(
         transform=ax.transAxes,
         ha="center",
         va="center",
-        fontsize=10,
+        fontsize=11,
         fontweight="bold",
         color="#333333"
     )
@@ -2076,7 +2076,7 @@ def draw_parameter_legend(
                 transform=ax.transAxes,
                 ha="center",
                 va="center",
-                fontsize=8,
+                fontsize=9,
                 fontweight="bold",
                 color="#333333"
             )
@@ -2088,7 +2088,7 @@ def draw_parameter_legend(
                 transform=ax.transAxes,
                 ha="center",
                 va="center",
-                fontsize=9,
+                fontsize=10,
                 color="#333333"
             )
 
@@ -2098,7 +2098,7 @@ def draw_parameter_legend(
             "Beaufort",
             transform=ax.transAxes,
             ha="center",
-            fontsize=8,
+            fontsize=9,
             color="#555555"
         )
 
@@ -2158,7 +2158,7 @@ def draw_parameter_legend(
             transform=ax.transAxes,
             ha="center",
             va="center",
-            fontsize=9,
+            fontsize=10,
             color="#333333"
         )
         
@@ -2206,6 +2206,7 @@ def plot_map(
         figsize=(15, 14),
         facecolor="white"
     )
+	fig.set_dpi(65)
 
     gs = fig.add_gridspec(
         2,
@@ -2262,21 +2263,21 @@ def plot_map(
 
     ax.set_xlabel(
         "Längengrad (°)",
-        fontsize=9,
+        fontsize=11,
         color="#555555",
         labelpad=5
     )
 
     ax.set_ylabel(
         "Breitengrad (°)",
-        fontsize=9,
+        fontsize=11,
         color="#555555",
         labelpad=5
     )
 
     ax.tick_params(
         axis="both",
-        labelsize=8,
+        labelsize=10,
         colors="#555555"
     )
     
