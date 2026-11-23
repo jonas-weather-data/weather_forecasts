@@ -2206,7 +2206,7 @@ def plot_map(
         figsize=(15, 14),
         facecolor="white"
     )
-	fig.set_dpi(65)
+    fig.set_dpi(65)
 
     gs = fig.add_gridspec(
         2,
@@ -2677,7 +2677,7 @@ def main():
                 parameter
             )
 
-                        # ------------------------------------------------
+            # ------------------------------------------------
             # INTERPOLIERTE TAGESKARTE ERSTELLEN
             # ------------------------------------------------
 
