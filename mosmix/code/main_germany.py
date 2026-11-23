@@ -68,6 +68,10 @@ OUTPUT_DIR = os.path.join(
 )
 
 REQUEST_TIMEOUT = 180
+FIRST_RUN_MARKER = os.path.join(
+    OUTPUT_DIR,
+    ".first_run_date"
+)
 
 
 # ============================================================
@@ -698,6 +702,29 @@ def log(message):
         message,
         flush=True
     )
+
+# ============================================================
+# ERSTEN LAUF DES TAGES ERKENNEN
+# ============================================================
+
+def is_first_run_of_day():
+
+    today = pd.Timestamp.now(
+        tz="Europe/Berlin"
+    ).strftime("%Y-%m-%d")
+
+    if not os.path.exists(FIRST_RUN_MARKER):
+        return True
+
+    with open(
+        FIRST_RUN_MARKER,
+        "r",
+        encoding="utf-8"
+    ) as file:
+
+        previous_date = file.read().strip()
+
+    return previous_date != today
 
 
 # ============================================================
@@ -2474,10 +2501,26 @@ def main():
     log("=" * 70)
     log("")
 
-    os.makedirs(
+        os.makedirs(
         OUTPUT_DIR,
         exist_ok=True
     )
+
+    # --------------------------------------------------------
+    # ERSTEN TAGESLAUF ERKENNEN
+    # --------------------------------------------------------
+
+    first_run = is_first_run_of_day()
+
+    if first_run:
+
+        log("")
+        log("ERSTER TAGESLAUF: Erstelle Stand A.")
+
+    else:
+
+        log("")
+        log("REGULÄRER TAGESLAUF: Erstelle Stand B.")
 
     # --------------------------------------------------------
     # 1. STATIONSDATEN
@@ -2648,9 +2691,19 @@ def main():
 
             map_name = parameter_names[parameter]
 
+            # ------------------------------------------------
+            # DATEINAME – STAND A ODER STAND B
+            # ------------------------------------------------
+
+            prefix = (
+                "first_run_"
+                if first_run
+                else ""
+            )
+
             output_file = os.path.join(
                 OUTPUT_DIR,
-                f"{map_name}_tag{day_number}.png"
+                f"{prefix}{map_name}_tag{day_number}.png"
             )
 
             plot_map(
@@ -2752,7 +2805,7 @@ def main():
                     parameter
                 )
     
-                                # ------------------------------------------------
+                # ------------------------------------------------
                 # INTERPOLIERTE SUMMENKARTE ERSTELLEN
                 # ------------------------------------------------
 
@@ -2763,9 +2816,19 @@ def main():
 
                 map_name = parameter_names[parameter]
 
+                # ------------------------------------------------
+                # DATEINAME – STAND A ODER STAND B
+                # ------------------------------------------------
+
+                prefix = (
+                    "first_run_"
+                    if first_run
+                    else ""
+                )
+
                 output_file = os.path.join(
                     OUTPUT_DIR,
-                    f"{map_name}_bis_tag{number_of_days}.png"
+                    f"{prefix}{map_name}_bis_tag{number_of_days}.png"
                 )
 
                 plot_map(
@@ -2839,9 +2902,32 @@ def main():
         f"{daily_map_count + sum_map_count}"
     )
 
-    log(
+        log(
         f"Ausgabeordner: {OUTPUT_DIR}"
     )
+
+    # --------------------------------------------------------
+    # ERSTEN TAGESLAUF REGISTRIEREN
+    # ERST NACH ERFOLGREICHER ERSTELLUNG ALLER KARTEN
+    # --------------------------------------------------------
+
+    if first_run:
+
+        with open(
+            FIRST_RUN_MARKER,
+            "w",
+            encoding="utf-8"
+        ) as file:
+
+            file.write(
+                pd.Timestamp.now(
+                    tz="Europe/Berlin"
+                ).strftime("%Y-%m-%d")
+            )
+
+        log(
+            "Erster Tageslauf erfolgreich registriert."
+        )
 
     log("=" * 70)
 
