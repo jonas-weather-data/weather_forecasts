@@ -1740,9 +1740,9 @@ def draw_state_summary(
     )
 
     columns = [
-        (0.57, "MAX"),
-        (0.77, "Ø"),
-        (0.97, "MIN")
+        (0.68, "MAX"),
+        (0.84, "Ø"),
+        (0.98, "MIN")
     ]
 
     for x, label in columns:
@@ -2220,6 +2220,17 @@ def plot_map(
     ax = fig.add_subplot(gs[0, 0])
 
     summary_ax = fig.add_subplot(gs[0, 1])
+
+    # Tabellenfläche nach links verbreitern.
+    # Die Kartenachse bleibt vollständig unverändert.
+    summary_position = summary_ax.get_position()
+
+    summary_ax.set_position([
+        summary_position.x0 - 0.011,
+        summary_position.y0,
+        summary_position.width + 0.011,
+        summary_position.height
+    ])
 
     legend_ax = fig.add_subplot(
         gs[1, :],
