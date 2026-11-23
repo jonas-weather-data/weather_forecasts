@@ -2902,7 +2902,7 @@ def main():
         f"{daily_map_count + sum_map_count}"
     )
 
-        log(
+    log(
         f"Ausgabeordner: {OUTPUT_DIR}"
     )
 
