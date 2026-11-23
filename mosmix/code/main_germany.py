@@ -2501,7 +2501,7 @@ def main():
     log("=" * 70)
     log("")
 
-        os.makedirs(
+    os.makedirs(
         OUTPUT_DIR,
         exist_ok=True
     )
