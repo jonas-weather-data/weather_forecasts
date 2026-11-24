@@ -2259,7 +2259,7 @@ def plot_map(
         2,
         2,
         height_ratios=[12, 1.25],
-        width_ratios=[4.7, 2.00],
+        width_ratios=[4.7, 2.25],
         hspace=0.06,
         wspace=0.005
     )
@@ -2480,7 +2480,7 @@ def plot_map(
         map_title,
         fontsize=18,
         fontweight="bold",
-        pad=6
+        pad=4
     )
 
     # --------------------------------------------------------
@@ -2514,7 +2514,7 @@ def plot_map(
 
     fig.subplots_adjust(
         left=0.02,
-        right=0.985,
+        right=0.97,
         top=0.96,
         bottom=0.025
     )
