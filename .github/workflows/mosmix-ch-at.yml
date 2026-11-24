@@ -10,7 +10,7 @@ on:
     types:
       - mosmix-update-ch-at
 
-# Verhindert parallele Läufe, die sich beim Push überschneiden könnten.
+# Verhindert parallele Läufe.
 concurrency:
   group: dwd-mosmix-ch-at
   cancel-in-progress: false
@@ -56,7 +56,7 @@ jobs:
 
       - name: MOSMIX-Karten für Schweiz und Österreich erstellen
         run: |
-          python weather_forecasts/mosmix_ch_at/code/main.py
+          python mosmix_ch_at/code/main.py
 
       # ------------------------------------------------------
       # 5. ERZEUGTE GRAFIKEN PRÜFEN
@@ -65,8 +65,8 @@ jobs:
       - name: Erzeugte Grafiken prüfen
         run: |
 
-          CH_OUTPUT_DIR="weather_forecasts/mosmix_ch_at/output/ch"
-          AT_OUTPUT_DIR="weather_forecasts/mosmix_ch_at/output/at"
+          CH_OUTPUT_DIR="mosmix_ch_at/output/ch"
+          AT_OUTPUT_DIR="mosmix_ch_at/output/at"
 
           # Schweiz prüfen
 
@@ -132,8 +132,8 @@ jobs:
       - name: Grafiken committen und pushen
         run: |
 
-          git add weather_forecasts/mosmix_ch_at/output/ch/
-          git add weather_forecasts/mosmix_ch_at/output/at/
+          git add mosmix_ch_at/output/ch/
+          git add mosmix_ch_at/output/at/
 
           if git diff --cached --quiet; then
 
