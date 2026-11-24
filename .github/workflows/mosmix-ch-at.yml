@@ -1,3 +1,4 @@
+
 name: DWD MOSMIX Forecast Maps CH AT
 
 permissions:
@@ -8,9 +9,9 @@ on:
 
   repository_dispatch:
     types:
-      - mosmix-update-ch-at
+      - mosmix-ch-at-update
 
-# Verhindert parallele Läufe.
+# Verhindert parallele Läufe dieses Workflows.
 concurrency:
   group: dwd-mosmix-ch-at
   cancel-in-progress: false
@@ -54,7 +55,7 @@ jobs:
       # 4. MOSMIX-KARTEN ERSTELLEN
       # ------------------------------------------------------
 
-      - name: MOSMIX-Karten für Schweiz und Österreich erstellen
+      - name: MOSMIX-Karten erstellen
         run: |
           python mosmix_ch_at/code/main.py
 
@@ -65,53 +66,29 @@ jobs:
       - name: Erzeugte Grafiken prüfen
         run: |
 
-          CH_OUTPUT_DIR="mosmix_ch_at/output/ch"
-          AT_OUTPUT_DIR="mosmix_ch_at/output/at"
+          OUTPUT_DIR="mosmix_ch_at/output"
 
-          # Schweiz prüfen
+          for COUNTRY in ch at; do
 
-          if [ ! -d "$CH_OUTPUT_DIR" ]; then
-            echo "Ausgabeordner Schweiz fehlt."
-            exit 1
-          fi
+            COUNTRY_DIR="$OUTPUT_DIR/$COUNTRY"
 
-          ch_count=$(find "$CH_OUTPUT_DIR" -maxdepth 1 -type f -name '*.png' | wc -l)
+            if [ ! -d "$COUNTRY_DIR" ]; then
+              echo "Ausgabeordner fehlt: $COUNTRY_DIR"
+              exit 1
+            fi
 
-          if [ "$ch_count" -eq 0 ]; then
-            echo "Keine Grafiken für die Schweiz erzeugt."
-            exit 1
-          fi
+            count=$(find "$COUNTRY_DIR" -maxdepth 1 -type f -name '*.png' | wc -l)
 
-          echo "$ch_count Grafiken für die Schweiz erfolgreich erzeugt."
+            if [ "$count" -eq 0 ]; then
+              echo "Keine Grafiken gefunden in $COUNTRY_DIR"
+              exit 1
+            fi
 
-          # Österreich prüfen
+            echo "$COUNTRY: $count Grafiken erfolgreich erzeugt."
 
-          if [ ! -d "$AT_OUTPUT_DIR" ]; then
-            echo "Ausgabeordner Österreich fehlt."
-            exit 1
-          fi
+            ls -lh "$COUNTRY_DIR"
 
-          at_count=$(find "$AT_OUTPUT_DIR" -maxdepth 1 -type f -name '*.png' | wc -l)
-
-          if [ "$at_count" -eq 0 ]; then
-            echo "Keine Grafiken für Österreich erzeugt."
-            exit 1
-          fi
-
-          echo "$at_count Grafiken für Österreich erfolgreich erzeugt."
-
-          # Gesamtübersicht
-
-          echo ""
-          echo "Schweiz:"
-          ls -lh "$CH_OUTPUT_DIR"
-
-          echo ""
-          echo "Österreich:"
-          ls -lh "$AT_OUTPUT_DIR"
-
-          echo ""
-          echo "Gesamt: $((ch_count + at_count)) Grafiken erfolgreich erzeugt."
+          done
 
       # ------------------------------------------------------
       # 6. GITHUB IDENTITÄT KONFIGURIEREN
@@ -126,10 +103,10 @@ jobs:
             "41898282+github-actions[bot]@users.noreply.github.com"
 
       # ------------------------------------------------------
-      # 7. GRAFIKEN COMMITTEN UND PUSHEN
+      # 7. GRAFIKEN COMMITTEN
       # ------------------------------------------------------
 
-      - name: Grafiken committen und pushen
+      - name: Grafiken committen
         run: |
 
           git add mosmix_ch_at/output/ch/
@@ -141,10 +118,42 @@ jobs:
 
           else
 
-            git commit -m "DWD MOSMIX-Prognosekarten Schweiz und Österreich aktualisieren"
-
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-
-            echo "Prognosekarten für Schweiz und Österreich erfolgreich ins Repository übertragen."
+            git commit -m "DWD MOSMIX Schweiz und Österreich aktualisieren"
 
           fi
+
+      # ------------------------------------------------------
+      # 8. AKTUELLEN REMOTE-STAND ÜBERNEHMEN
+      # ------------------------------------------------------
+
+      - name: Remote-Änderungen integrieren und pushen
+        run: |
+
+          BRANCH="${GITHUB_REF_NAME}"
+
+          # Mehrere Versuche, falls während des Pushens
+          # ein anderer Workflow ebenfalls Änderungen überträgt.
+
+          for attempt in 1 2 3 4 5; do
+
+            echo "Push-Versuch $attempt von 5"
+
+            git fetch origin "$BRANCH"
+
+            git rebase "origin/$BRANCH"
+
+            if git push origin "HEAD:$BRANCH"; then
+
+              echo "Prognosekarten erfolgreich übertragen."
+              exit 0
+
+            fi
+
+            echo "Push fehlgeschlagen. Neuer Versuch folgt."
+
+            sleep 3
+
+          done
+
+          echo "Push nach 5 Versuchen fehlgeschlagen."
+          exit 1
