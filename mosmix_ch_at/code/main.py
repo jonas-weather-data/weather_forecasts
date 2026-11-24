@@ -1731,6 +1731,7 @@ def calculate_label_positions(
 
 
 
+
 def draw_state_summary(
     ax,
     state_df,
@@ -1744,6 +1745,12 @@ def draw_state_summary(
     ax.axis("off")
 
     accent = "#a50026"
+
+    is_switzerland = country_name == "Schweiz"
+
+    # --------------------------------------------------------
+    # KOPFBEREICH
+    # --------------------------------------------------------
 
     ax.text(
         0.0, 0.995,
@@ -1759,7 +1766,7 @@ def draw_state_summary(
         0.0, 0.963,
         "Lauf",
         transform=ax.transAxes,
-        fontsize=10.5,
+        fontsize=10,
         va="top",
         color="#777777"
     )
@@ -1768,7 +1775,7 @@ def draw_state_summary(
         1.0, 0.963,
         issue_time.strftime("%d.%m.%Y %Hz"),
         transform=ax.transAxes,
-        fontsize=10.5,
+        fontsize=10,
         ha="right",
         va="top",
         color="#333333"
@@ -1778,7 +1785,7 @@ def draw_state_summary(
         0.0, 0.925,
         "Erstellt am",
         transform=ax.transAxes,
-        fontsize=10.5,
+        fontsize=10,
         va="top",
         color="#777777"
     )
@@ -1787,7 +1794,7 @@ def draw_state_summary(
         1.0, 0.925,
         created_at.strftime("%d.%m.%Y %H:%M:%S") + " Uhr",
         transform=ax.transAxes,
-        fontsize=10.5,
+        fontsize=10,
         ha="right",
         va="top",
         color="#333333"
@@ -1802,11 +1809,15 @@ def draw_state_summary(
         clip_on=False
     )
 
+    # --------------------------------------------------------
+    # TABELLENKOPF
+    # --------------------------------------------------------
+
     ax.text(
         0.0, 0.845,
         "Region",
         transform=ax.transAxes,
-        fontsize=11,
+        fontsize=10.5,
         fontweight="bold",
         va="top",
         color="#333333"
@@ -1824,7 +1835,7 @@ def draw_state_summary(
             x, 0.845,
             label,
             transform=ax.transAxes,
-            fontsize=10.5,
+            fontsize=10,
             fontweight="bold",
             ha="center",
             va="top",
@@ -1840,8 +1851,21 @@ def draw_state_summary(
         clip_on=False
     )
 
-    y = 0.775
-    line_height = 0.0415
+    # --------------------------------------------------------
+    # REGIONALE WERTE
+    # --------------------------------------------------------
+
+    y = 0.785
+
+    if is_switzerland:
+
+        line_height = 0.0265
+        fontsize = 8.5
+
+    else:
+
+        line_height = 0.0415
+        fontsize = 10.5
 
     for _, row in state_df.iterrows():
 
@@ -1850,7 +1874,7 @@ def draw_state_summary(
             y,
             row["bundesland"],
             transform=ax.transAxes,
-            fontsize=10.5,
+            fontsize=fontsize,
             va="center",
             color="#333333"
         )
@@ -1871,13 +1895,17 @@ def draw_state_summary(
                 y,
                 format_value(value, parameter),
                 transform=ax.transAxes,
-                fontsize=10.5,
+                fontsize=fontsize,
                 ha="center",
                 va="center",
                 color="#333333"
             )
 
         y -= line_height
+
+    # --------------------------------------------------------
+    # GESAMTGEBIET
+    # --------------------------------------------------------
 
     y -= 0.012
 
@@ -1895,7 +1923,7 @@ def draw_state_summary(
         y,
         country_name,
         transform=ax.transAxes,
-        fontsize=11,
+        fontsize=10.5,
         fontweight="bold",
         va="center",
         color="#222222"
@@ -1917,13 +1945,12 @@ def draw_state_summary(
             y,
             format_value(value, parameter),
             transform=ax.transAxes,
-            fontsize=11,
+            fontsize=10.5,
             fontweight="bold",
             ha="center",
             va="center",
             color=accent
         )
-
 
 # ============================================================
 # DEUTSCHLANDKARTE ERSTELLEN
@@ -2260,33 +2287,54 @@ def plot_map(
             parameter,
             number_of_days
         )
-
+   
     
     # --------------------------------------------------------
     # FIGURE MIT KARTE, ÜBERSICHT UND LEGENDE
     # --------------------------------------------------------
 
-    fig = plt.figure(
-        figsize=(15, 14),
-        facecolor="white"
-    )
+    is_switzerland = country_name == "Schweiz"
 
-    gs = fig.add_gridspec(
-        2,
-        2,
-        height_ratios=[12, 1.25],
-        width_ratios=[4.7, 2.25],
-        hspace=0.06,
-        wspace=0.005
-    )
+    if is_switzerland:
+
+        # Mehr Höhe für die 26 Kantone
+        fig = plt.figure(
+            figsize=(16, 17),
+            facecolor="white"
+        )
+
+        gs = fig.add_gridspec(
+            2,
+            2,
+            height_ratios=[14, 1.3],
+            width_ratios=[4.5, 2.5],
+            hspace=0.045,
+            wspace=0.025
+        )
+
+    else:
+
+        # Österreich: bisherige kompakte Darstellung
+        fig = plt.figure(
+            figsize=(16, 14),
+            facecolor="white"
+        )
+
+        gs = fig.add_gridspec(
+            2,
+            2,
+            height_ratios=[12, 1.25],
+            width_ratios=[4.7, 2.25],
+            hspace=0.045,
+            wspace=0.025
+        )
 
     ax = fig.add_subplot(gs[0, 0])
 
     summary_ax = fig.add_subplot(gs[0, 1])
 
-    legend_ax = fig.add_subplot(
-        gs[1, :],
-    )
+    legend_ax = fig.add_subplot(gs[1, :])
+
 
 
     # --------------------------------------------------------
@@ -2525,16 +2573,28 @@ def plot_map(
     )
 
 
+    
     # --------------------------------------------------------
     # SPEICHERN
     # --------------------------------------------------------
 
-    fig.subplots_adjust(
-        left=0.02,
-        right=0.97,
-        top=0.96,
-        bottom=0.025
-    )
+    if is_switzerland:
+
+        fig.subplots_adjust(
+            left=0.035,
+            right=0.975,
+            top=0.975,
+            bottom=0.035
+        )
+
+    else:
+
+        fig.subplots_adjust(
+            left=0.025,
+            right=0.975,
+            top=0.965,
+            bottom=0.035
+        )
 
     fig.savefig(
         output_file,
