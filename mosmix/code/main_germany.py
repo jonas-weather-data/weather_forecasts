@@ -1093,6 +1093,7 @@ def process_placemark(
 
     }
 
+    
     # --------------------------------------------------------
     # SECHS PARAMETER BERECHNEN
     # --------------------------------------------------------
@@ -1119,27 +1120,25 @@ def process_placemark(
                 continue
 
             # --------------------------------------------
-            # 12-STUNDEN-WERTE: TX UND TN
-            # VOLLSTÄNDIG INNERHALB 00–24 UTC
+            # TX UND TN:
+            # AUSSCHLIESSLICH DAS 12-STUNDEN-INTERVALL
+            # 06:00 BIS 18:00 UTC
             # --------------------------------------------
 
             if window_hours == 12:
 
-                interval_start = (
-                    timestamp
-                    - pd.Timedelta(hours=12)
+                target_timestamp = (
+                    day_start
+                    + pd.Timedelta(hours=18)
                 )
 
-                if (
-                    interval_start >= day_start
-                    and timestamp <= day_end
-                ):
+                if timestamp == target_timestamp:
 
                     selected.append(value)
 
             # --------------------------------------------
-            # INSTANTANEOUS WERTE: TTT
-            # 00:00 BIS EXKLUSIV 24:00 UTC
+            # TTT:
+            # STUNDENWERTE VON 00:00 BIS EXKLUSIV 24:00
             # --------------------------------------------
 
             elif window_hours == 0:
@@ -1152,7 +1151,7 @@ def process_placemark(
                     selected.append(value)
 
             # --------------------------------------------
-            # STUNDENINTERVALLE: SunD1, RR1c, FX1
+            # STUNDENINTERVALLE:
             # 01:00 BIS EINSCHLIESSLICH 24:00 UTC
             # --------------------------------------------
 
@@ -1174,15 +1173,10 @@ def process_placemark(
             result[parameter] = None
             continue
 
-        if window_hours != 12:
-
-            expected_hours = (
-                24 if window_hours == 1 else 0
-            )
+        if window_hours == 1:
 
             if (
-                expected_hours > 0
-                and len(selected) < expected_hours
+                len(selected) < 24
                 and target_date != pd.Timestamp.now(
                     tz="UTC"
                 ).date()
@@ -1219,7 +1213,62 @@ def process_placemark(
             ]
 
         # ------------------------------------------------
-        # AGGREGATION
+        # TX UND TN:
+        # 12-STUNDEN-EXTREM MIT TTT-STUNDENEXTREM
+        # DES GESAMTEN KALENDERTAGES KOMBINIEREN
+        # ------------------------------------------------
+
+        if parameter in ("TX", "TN"):
+
+            ttt_values = forecasts.get("TTT")
+
+            if ttt_values is None:
+
+                result[parameter] = None
+                continue
+
+            ttt_selected = []
+
+            for timestamp, value in zip(
+                time_steps,
+                ttt_values
+            ):
+
+                if (
+                    value is not None
+                    and timestamp >= day_start
+                    and timestamp < day_end
+                ):
+
+                    ttt_selected.append(
+                        value - 273.15
+                    )
+
+            if not ttt_selected:
+
+                result[parameter] = None
+                continue
+
+            candidates = (
+                selected + ttt_selected
+            )
+
+            if parameter == "TX":
+
+                result[parameter] = max(
+                    candidates
+                )
+
+            else:
+
+                result[parameter] = min(
+                    candidates
+                )
+
+            continue
+
+        # ------------------------------------------------
+        # AGGREGATION ALLER ÜBRIGEN PARAMETER
         # ------------------------------------------------
 
         aggregation = config["aggregation"]
