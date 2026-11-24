@@ -794,10 +794,6 @@ def parse_time_steps(root):
                 utc=True
             )
 
-            timestamp = timestamp.tz_convert(
-                "Europe/Berlin"
-            )
-
             time_steps.append(timestamp)
 
         except Exception:
@@ -812,7 +808,6 @@ def parse_time_steps(root):
 
     return time_steps
 
-
 def get_forecast_dates(kmz_bytes):
 
     with zipfile.ZipFile(
@@ -826,6 +821,7 @@ def get_forecast_dates(kmz_bytes):
         ]
 
         if not kml_files:
+
             raise RuntimeError(
                 "Keine KML-Datei in KMZ gefunden."
             )
@@ -836,7 +832,7 @@ def get_forecast_dates(kmz_bytes):
     time_steps = parse_time_steps(root)
 
     today = pd.Timestamp.now(
-        tz="Europe/Berlin"
+        tz="UTC"
     ).date()
 
     last_day = today + timedelta(days=9)
@@ -848,6 +844,7 @@ def get_forecast_dates(kmz_bytes):
     })
 
     if not dates:
+
         raise RuntimeError(
             "Keine zukünftigen Prognosetage gefunden."
         )
@@ -1065,16 +1062,16 @@ def process_placemark(
 
         forecasts[element_name] = values
 
-    # --------------------------------------------------------
-    # TAGESGRENZEN
+        # --------------------------------------------------------
+    # TAGESGRENZEN – AUSSCHLIESSLICH UTC
     # --------------------------------------------------------
 
     day_start = pd.Timestamp(
         target_date,
-        tz="Europe/Berlin"
+        tz="UTC"
     )
 
-    day_end = day_start + pd.DateOffset(days=1)
+    day_end = day_start + pd.Timedelta(days=1)
 
     # --------------------------------------------------------
     # GRUNDDATEN
@@ -1123,6 +1120,7 @@ def process_placemark(
 
             # --------------------------------------------
             # 12-STUNDEN-WERTE: TX UND TN
+            # VOLLSTÄNDIG INNERHALB 00–24 UTC
             # --------------------------------------------
 
             if window_hours == 12:
@@ -1133,14 +1131,15 @@ def process_placemark(
                 )
 
                 if (
-                    timestamp > day_start
-                    and interval_start < day_end
+                    interval_start >= day_start
+                    and timestamp <= day_end
                 ):
 
                     selected.append(value)
 
             # --------------------------------------------
             # INSTANTANEOUS WERTE: TTT
+            # 00:00 BIS EXKLUSIV 24:00 UTC
             # --------------------------------------------
 
             elif window_hours == 0:
@@ -1153,7 +1152,8 @@ def process_placemark(
                     selected.append(value)
 
             # --------------------------------------------
-            # STUNDENINTERVALLE
+            # STUNDENINTERVALLE: SunD1, RR1c, FX1
+            # 01:00 BIS EINSCHLIESSLICH 24:00 UTC
             # --------------------------------------------
 
             else:
@@ -1180,18 +1180,16 @@ def process_placemark(
                 24 if window_hours == 1 else 0
             )
 
-            
             if (
                 expected_hours > 0
                 and len(selected) < expected_hours
                 and target_date != pd.Timestamp.now(
-                    tz="Europe/Berlin"
+                    tz="UTC"
                 ).date()
             ):
-            
+
                 result[parameter] = None
                 continue
-
 
         # ------------------------------------------------
         # EINHEITENUMRECHNUNG
@@ -2582,7 +2580,7 @@ def main():
     daily_full_gdfs = []
     
     today = pd.Timestamp.now(
-        tz="Europe/Berlin"
+        tz="UTC"
     ).date()
 
     # --------------------------------------------------------
