@@ -2259,7 +2259,7 @@ def plot_map(
         2,
         2,
         height_ratios=[12, 1.25],
-        width_ratios=[4.7, 1.55],
+        width_ratios=[4.7, 2.00],
         hspace=0.06,
         wspace=0.005
     )
