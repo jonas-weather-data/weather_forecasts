@@ -860,7 +860,7 @@ def get_forecast_dates(kmz_bytes):
     time_steps = parse_time_steps(root)
 
     today = pd.Timestamp.now(
-        tz="UTC"
+        tz="Europe/Berlin"
     ).date()
 
     last_day = today + timedelta(days=9)
