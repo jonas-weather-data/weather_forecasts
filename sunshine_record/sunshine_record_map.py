@@ -414,6 +414,17 @@ def process_station(file_name, meta, total_stations):
         current_month['SDK'].notna().sum()
     )
 
+    daily_values = {}
+
+    for _, row in current_month.iterrows():
+
+        if pd.notna(row['SDK']):
+            day = row['MESS_DATUM'].day
+
+            daily_values.setdefault(day, []).append(
+                float(row['SDK'])
+            )
+
     # ========================================================
     # STATIONS-JAHRESWERT
     #
@@ -443,6 +454,7 @@ def process_station(file_name, meta, total_stations):
         'lon': meta[sid]['lon'],
         'current': current,
         'monthly_sum': monthly_sum,
+        'daily_values': daily_values,
         'record': record,
         'record_year': STATIONS[sid]['record_year'],
         'remaining': remaining
@@ -467,14 +479,13 @@ def process_station(file_name, meta, total_stations):
 # ============================================================
 
 
+
 def calculate_germany_mean(results):
     """
-    Deutschlandmittel nach der SQL-Methode:
+    Deutschlandmittel nach SQL-Methode:
 
-    1. Tagesmittel aller verfügbaren Stationen berechnen.
-    2. Tagesmittel des laufenden Monats summieren.
-    3. Deutschland-Faktor anwenden.
-    4. Zum bisherigen Deutschlandmittel addieren.
+    Tagesmittel aller verfügbaren Stationen bilden,
+    anschließend die Tagesmittel summieren.
     """
 
     if GERMANY_CURRENT_2026 is None:
@@ -487,32 +498,29 @@ def calculate_germany_mean(results):
             'Keine Stationsdaten vorhanden.'
         )
 
-    # Tageswerte aller erfolgreich verarbeiteten Stationen
+    # Alle Stationswerte nach Kalendertag gruppieren
     daily_values = {}
 
     for result in results.values():
 
-        sid = result['station_id']
+        for day, values in result['daily_values'].items():
 
-        # Die monatlichen Einzelwerte werden benötigt.
-        # Diese müssen in process_station gespeichert werden.
-
-    # Tagesmittel direkt aus den Stationsdaten berechnen
-    # (siehe notwendige Ergänzung in process_station)
+            daily_values.setdefault(day, []).extend(values)
 
     if not daily_values:
         raise ValueError(
             'Keine täglichen Stationswerte vorhanden.'
         )
 
-    daily_means = [
-        np.mean(values)
-        for values in daily_values.values()
+    # Tagesmittel berechnen und aufsummieren
+    daily_means = {
+        day: float(np.mean(values))
+        for day, values in daily_values.items()
         if values
-    ]
+    }
 
     station_monthly_mean = round(
-        float(np.sum(daily_means)),
+        sum(daily_means.values()),
         1
     )
 
@@ -522,7 +530,8 @@ def calculate_germany_mean(results):
     )
 
     germany_current = round(
-        GERMANY_CURRENT_2026 + germany_month_increment,
+        GERMANY_CURRENT_2026
+        + germany_month_increment,
         1
     )
 
@@ -533,7 +542,8 @@ def calculate_germany_mean(results):
         'month_increment': germany_month_increment,
         'current': germany_current,
         'record': (
-            None if GERMANY_RECORD is None
+            None
+            if GERMANY_RECORD is None
             else round(GERMANY_RECORD, 1)
         ),
         'record_year': GERMANY_RECORD_YEAR
