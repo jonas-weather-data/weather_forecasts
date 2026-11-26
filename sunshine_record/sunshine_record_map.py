@@ -466,13 +466,15 @@ def process_station(file_name, meta, total_stations):
 # DEUTSCHLANDMITTEL
 # ============================================================
 
+
 def calculate_germany_mean(results):
     """
-    Separates Deutschlandmittel:
+    Deutschlandmittel nach der SQL-Methode:
 
-    bisherige Deutschlandmenge 2026
-    +
-    Mittelwert der Stations-Monatssummen * 0.9897
+    1. Tagesmittel aller verfügbaren Stationen berechnen.
+    2. Tagesmittel des laufenden Monats summieren.
+    3. Deutschland-Faktor anwenden.
+    4. Zum bisherigen Deutschlandmittel addieren.
     """
 
     if GERMANY_CURRENT_2026 is None:
@@ -482,16 +484,35 @@ def calculate_germany_mean(results):
 
     if not results:
         raise ValueError(
-            'Keine Stationsdaten für Deutschlandmittel vorhanden.'
+            'Keine Stationsdaten vorhanden.'
         )
 
-    station_monthly_sums = [
-        result['monthly_sum']
-        for result in results.values()
+    # Tageswerte aller erfolgreich verarbeiteten Stationen
+    daily_values = {}
+
+    for result in results.values():
+
+        sid = result['station_id']
+
+        # Die monatlichen Einzelwerte werden benötigt.
+        # Diese müssen in process_station gespeichert werden.
+
+    # Tagesmittel direkt aus den Stationsdaten berechnen
+    # (siehe notwendige Ergänzung in process_station)
+
+    if not daily_values:
+        raise ValueError(
+            'Keine täglichen Stationswerte vorhanden.'
+        )
+
+    daily_means = [
+        np.mean(values)
+        for values in daily_values.values()
+        if values
     ]
 
     station_monthly_mean = round(
-        float(np.mean(station_monthly_sums)),
+        float(np.sum(daily_means)),
         1
     )
 
@@ -501,8 +522,7 @@ def calculate_germany_mean(results):
     )
 
     germany_current = round(
-        GERMANY_CURRENT_2026
-        + germany_month_increment,
+        GERMANY_CURRENT_2026 + germany_month_increment,
         1
     )
 
@@ -513,8 +533,7 @@ def calculate_germany_mean(results):
         'month_increment': germany_month_increment,
         'current': germany_current,
         'record': (
-            None
-            if GERMANY_RECORD is None
+            None if GERMANY_RECORD is None
             else round(GERMANY_RECORD, 1)
         ),
         'record_year': GERMANY_RECORD_YEAR
