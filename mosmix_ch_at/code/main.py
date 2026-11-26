@@ -1745,7 +1745,6 @@ def draw_state_summary(
     ax.axis("off")
 
     accent = "#a50026"
-
     is_switzerland = country_name == "Schweiz"
 
     # --------------------------------------------------------
@@ -1753,7 +1752,7 @@ def draw_state_summary(
     # --------------------------------------------------------
 
     ax.text(
-        0.0, 0.995,
+        0.0, 1.025,
         "MOSMIX-Prognose",
         transform=ax.transAxes,
         fontsize=11,
@@ -1763,7 +1762,7 @@ def draw_state_summary(
     )
 
     ax.text(
-        0.0, 0.963,
+        0.0, 0.955,
         "Lauf",
         transform=ax.transAxes,
         fontsize=10,
@@ -1772,7 +1771,7 @@ def draw_state_summary(
     )
 
     ax.text(
-        1.0, 0.963,
+        1.0, 0.955,
         issue_time.strftime("%d.%m.%Y %Hz"),
         transform=ax.transAxes,
         fontsize=10,
@@ -1782,7 +1781,7 @@ def draw_state_summary(
     )
 
     ax.text(
-        0.0, 0.925,
+        0.0, 0.895,
         "Erstellt am",
         transform=ax.transAxes,
         fontsize=10,
@@ -1791,7 +1790,7 @@ def draw_state_summary(
     )
 
     ax.text(
-        1.0, 0.925,
+        1.0, 0.895,
         created_at.strftime("%d.%m.%Y %H:%M:%S") + " Uhr",
         transform=ax.transAxes,
         fontsize=10,
@@ -1802,87 +1801,309 @@ def draw_state_summary(
 
     ax.plot(
         [0.0, 1.0],
-        [0.875, 0.875],
+        [0.855, 0.855],
         transform=ax.transAxes,
         color="#bdbdbd",
         linewidth=0.8,
         clip_on=False
     )
 
-    # --------------------------------------------------------
-    # TABELLENKOPF
-    # --------------------------------------------------------
-
-    ax.text(
-        0.0, 0.845,
-        "Region",
-        transform=ax.transAxes,
-        fontsize=10.5,
-        fontweight="bold",
-        va="top",
-        color="#333333"
-    )
-
-    columns = [
-        (0.68, "MAX"),
-        (0.84, "Ø"),
-        (0.98, "MIN")
-    ]
-
-    for x, label in columns:
-
-        ax.text(
-            x, 0.845,
-            label,
-            transform=ax.transAxes,
-            fontsize=10,
-            fontweight="bold",
-            ha="center",
-            va="top",
-            color=accent
-        )
-
-    ax.plot(
-        [0.0, 1.0],
-        [0.805, 0.805],
-        transform=ax.transAxes,
-        color="#bdbdbd",
-        linewidth=0.8,
-        clip_on=False
-    )
-
-    # --------------------------------------------------------
-    # REGIONALE WERTE
-    # --------------------------------------------------------
-
-    y = 0.785
+    # ========================================================
+    # SCHWEIZ: ZWEI KANTONSSPALTEN
+    # ========================================================
 
     if is_switzerland:
 
-        line_height = 0.0265
-        fontsize = 8.5
+        state_rows = list(
+            state_df.iterrows()
+        )
+
+        left_states = state_rows[:13]
+        right_states = state_rows[13:26]
+
+        blocks = [
+            (0.00, 0.48, left_states),
+            (0.52, 0.48, right_states)
+        ]
+
+        for block_x, block_width, states in blocks:
+
+            # ------------------------------------------------
+            # EIN TABELLENKOPF JE BLOCK
+            # ------------------------------------------------
+
+            ax.text(
+                block_x,
+                0.815,
+                "Kanton",
+                transform=ax.transAxes,
+                fontsize=10,
+                fontweight="bold",
+                va="top",
+                color="#333333"
+            )
+
+            columns = [
+                (
+                    block_x + block_width * 0.66,
+                    "MAX"
+                ),
+                (
+                    block_x + block_width * 0.82,
+                    "Ø"
+                ),
+                (
+                    block_x + block_width * 0.98,
+                    "MIN"
+                )
+            ]
+
+            for x, label in columns:
+
+                ax.text(
+                    x,
+                    0.815,
+                    label,
+                    transform=ax.transAxes,
+                    fontsize=10,
+                    fontweight="bold",
+                    ha="center",
+                    va="top",
+                    color=accent
+                )
+
+            ax.plot(
+                [
+                    block_x,
+                    block_x + block_width
+                ],
+                [0.765, 0.765],
+                transform=ax.transAxes,
+                color="#bdbdbd",
+                linewidth=0.8,
+                clip_on=False
+            )
+
+            # ------------------------------------------------
+            # 13 KANTONE
+            # ------------------------------------------------
+
+            y = 0.735
+
+            for _, row in states:
+
+                ax.text(
+                    block_x,
+                    y,
+                    row["bundesland"],
+                    transform=ax.transAxes,
+                    fontsize=9.5,
+                    va="center",
+                    color="#333333"
+                )
+
+                values = [
+                    row["max"],
+                    row["mean"],
+                    row["min"]
+                ]
+
+                for (x, _), value in zip(
+                    columns,
+                    values
+                ):
+
+                    ax.text(
+                        x,
+                        y,
+                        format_value(value, parameter),
+                        transform=ax.transAxes,
+                        fontsize=9.5,
+                        ha="center",
+                        va="center",
+                        color="#333333"
+                    )
+
+                y -= 0.043
+
+        # ----------------------------------------------------
+        # GESAMTGEBIET SCHWEIZ
+        # ----------------------------------------------------
+
+        ax.plot(
+            [0.0, 1.0],
+            [0.195, 0.195],
+            transform=ax.transAxes,
+            color="#bdbdbd",
+            linewidth=0.8,
+            clip_on=False
+        )
+
+        ax.text(
+            0.0,
+            0.155,
+            country_name,
+            transform=ax.transAxes,
+            fontsize=10.5,
+            fontweight="bold",
+            va="center",
+            color="#222222"
+        )
+
+        values = [
+            country_extremes["max"],
+            country_extremes["mean"],
+            country_extremes["min"]
+        ]
+
+        # ----------------------------------------------------
+        # GESAMTWERTE:
+        # EXAKT UNTER DEN SPALTEN DER LINKEN KANTONSGRUPPE
+        # ----------------------------------------------------
+
+        total_columns = [
+            0.3168,
+            0.3936,
+            0.4704
+        ]
+
+        for x, value in zip(
+            total_columns,
+            values
+        ):
+
+            ax.text(
+                x,
+                0.155,
+                format_value(value, parameter),
+                transform=ax.transAxes,
+                fontsize=10.5,
+                fontweight="bold",
+                ha="center",
+                va="center",
+                color=accent
+            )
+
+    # ========================================================
+    # ÖSTERREICH: URSPRÜNGLICHE TABELLENDARSTELLUNG
+    # ========================================================
 
     else:
 
-        line_height = 0.0415
+        columns = [
+            (0.68, "MAX"),
+            (0.84, "Ø"),
+            (0.98, "MIN")
+        ]
+
+        ax.text(
+            0.0,
+            0.815,
+            "Region",
+            transform=ax.transAxes,
+            fontsize=10.5,
+            fontweight="bold",
+            va="top",
+            color="#333333"
+        )
+
+        for x, label in columns:
+
+            ax.text(
+                x,
+                0.815,
+                label,
+                transform=ax.transAxes,
+                fontsize=10,
+                fontweight="bold",
+                ha="center",
+                va="top",
+                color=accent
+            )
+
+        ax.plot(
+            [0.0, 1.0],
+            [0.765, 0.765],
+            transform=ax.transAxes,
+            color="#bdbdbd",
+            linewidth=0.8,
+            clip_on=False
+        )
+
+        y = 0.720
+        line_height = 0.052
         fontsize = 10.5
 
-    for _, row in state_df.iterrows():
+        for _, row in state_df.iterrows():
+
+            ax.text(
+                0.0,
+                y,
+                row["bundesland"],
+                transform=ax.transAxes,
+                fontsize=fontsize,
+                va="center",
+                color="#333333"
+            )
+
+            values = [
+                row["max"],
+                row["mean"],
+                row["min"]
+            ]
+
+            for (x, _), value in zip(
+                columns,
+                values
+            ):
+
+                ax.text(
+                    x,
+                    y,
+                    format_value(value, parameter),
+                    transform=ax.transAxes,
+                    fontsize=fontsize,
+                    ha="center",
+                    va="center",
+                    color="#333333"
+                )
+
+            y -= line_height
+
+        # ----------------------------------------------------
+        # GESAMTGEBIET ÖSTERREICH
+        # ----------------------------------------------------
+
+        last_region_y = y + line_height
+
+        separator_y = last_region_y - 0.040
+
+        ax.plot(
+            [0.0, 1.0],
+            [separator_y, separator_y],
+            transform=ax.transAxes,
+            color="#bdbdbd",
+            linewidth=0.8,
+            clip_on=False
+        )
+
+        y = separator_y - 0.045
 
         ax.text(
             0.0,
             y,
-            row["bundesland"],
+            country_name,
             transform=ax.transAxes,
-            fontsize=fontsize,
+            fontsize=10.5,
+            fontweight="bold",
             va="center",
-            color="#333333"
+            color="#222222"
         )
 
         values = [
-            row["max"],
-            row["mean"],
-            row["min"]
+            country_extremes["max"],
+            country_extremes["mean"],
+            country_extremes["min"]
         ]
 
         for (x, _), value in zip(
@@ -1895,62 +2116,12 @@ def draw_state_summary(
                 y,
                 format_value(value, parameter),
                 transform=ax.transAxes,
-                fontsize=fontsize,
+                fontsize=10.5,
+                fontweight="bold",
                 ha="center",
                 va="center",
-                color="#333333"
+                color=accent
             )
-
-        y -= line_height
-
-    # --------------------------------------------------------
-    # GESAMTGEBIET
-    # --------------------------------------------------------
-
-    y -= 0.012
-
-    ax.plot(
-        [0.0, 1.0],
-        [y + 0.021, y + 0.021],
-        transform=ax.transAxes,
-        color="#bdbdbd",
-        linewidth=0.8,
-        clip_on=False
-    )
-
-    ax.text(
-        0.0,
-        y,
-        country_name,
-        transform=ax.transAxes,
-        fontsize=10.5,
-        fontweight="bold",
-        va="center",
-        color="#222222"
-    )
-
-    values = [
-        country_extremes["max"],
-        country_extremes["mean"],
-        country_extremes["min"]
-    ]
-
-    for (x, _), value in zip(
-        columns,
-        values
-    ):
-
-        ax.text(
-            x,
-            y,
-            format_value(value, parameter),
-            transform=ax.transAxes,
-            fontsize=10.5,
-            fontweight="bold",
-            ha="center",
-            va="center",
-            color=accent
-        )
 
 # ============================================================
 # DEUTSCHLANDKARTE ERSTELLEN
@@ -1964,7 +2135,8 @@ def draw_state_summary(
 def draw_parameter_legend(
     ax,
     parameter,
-    number_of_days=None
+    number_of_days=None,
+    compact_layout=False
 ):
 
     style = PLOT_STYLES[parameter]
@@ -2068,6 +2240,19 @@ def draw_parameter_legend(
     ax.set_ylim(0, 1)
 
     ax.axis("off")
+    
+    # --------------------------------------------------------
+    # FARBVERLAUF-HÖHE
+    # --------------------------------------------------------
+
+    if compact_layout:
+        bar_bottom = 0.54
+        bar_top = 0.68
+        tick_bottom = 0.50
+    else:
+        bar_bottom = 0.48
+        bar_top = 0.72
+        tick_bottom = 0.44
 
     # --------------------------------------------------------
     # TITEL
@@ -2131,7 +2316,12 @@ def draw_parameter_legend(
 
         ax.imshow(
             [list(range(13))],
-            extent=[0.08, 0.92, 0.48, 0.72],
+            extent=[
+                0.08,
+                0.92,
+                bar_bottom,
+                bar_top
+            ],      
             aspect="auto",
             cmap=legend_cmap,
             norm=BoundaryNorm(
@@ -2216,7 +2406,12 @@ def draw_parameter_legend(
 
         ax.imshow(
             gradient_array,
-            extent=[0.08, 0.92, 0.48, 0.72],
+            extent=[
+                0.08,
+                0.92,
+                bar_bottom,
+                bar_top
+            ],
             aspect="auto",
             interpolation="nearest"
         )
@@ -2237,7 +2432,7 @@ def draw_parameter_legend(
 
         ax.plot(
             [x, x],
-            [0.44, 0.48],
+            [tick_bottom, bar_bottom],
             transform=ax.transAxes,
             color="#555555",
             linewidth=0.6
@@ -2252,7 +2447,8 @@ def draw_parameter_legend(
             va="center",
             fontsize=10.5,
             color="#333333"
-        ) 
+        )
+
 
 def plot_map(
     germany,
@@ -2269,6 +2465,7 @@ def plot_map(
     interpolated=True,
     country_name="Schweiz"
 ):
+
     log(
         f"      Erstelle {output_file} ..."
     )
@@ -2278,85 +2475,106 @@ def plot_map(
     cmap = get_parameter_cmap(parameter)
 
     if number_of_days is None:
-    
+
         norm = get_parameter_norm(parameter)
-    
+
     else:
-    
+
         norm = get_period_norm(
             parameter,
             number_of_days
         )
-   
+
+    # ========================================================
+    # NEUES LAYOUT:
+    # OBEN KARTE – UNTEN TABELLE UND LEGENDE
+    # ========================================================
+
+    fig = plt.figure(
+        figsize=(18,13),
+        facecolor="white"
+    )
+
+    # --------------------------------------------------------
+    # LAYOUT JE NACH LAND
+    # --------------------------------------------------------
     
+    height_ratios = [2.0, 1.1]
+
+    if country_name == "Schweiz":
+        width_ratios = [1.42, 0.58]
+    else:
+        width_ratios = [1.15, 0.85]
+
+    gs = fig.add_gridspec(
+        2,
+        2,
+        height_ratios=height_ratios,
+        width_ratios=width_ratios,
+        hspace=0.13,
+        wspace=0.025
+    )
+
     # --------------------------------------------------------
-    # FIGURE MIT KARTE, ÜBERSICHT UND LEGENDE
+    # ACHSEN ANLEGEN
     # --------------------------------------------------------
 
-    is_switzerland = country_name == "Schweiz"
+    if country_name == "Schweiz":
 
-    if is_switzerland:
-
-        # Mehr Höhe für die 26 Kantone
-        fig = plt.figure(
-            figsize=(16, 17),
-            facecolor="white"
+        # Karte oben links
+        ax = fig.add_subplot(
+            gs[0, 0]
         )
 
-        gs = fig.add_gridspec(
-            2,
-            2,
-            height_ratios=[14, 1.3],
-            width_ratios=[4.5, 2.5],
-            hspace=0.045,
-            wspace=0.025
+        # Legende oben rechts, außerhalb der Karte
+        legend_ax = fig.add_subplot(
+            gs[0, 1]
+        )
+
+        # Tabelle über die gesamte untere Breite
+        summary_ax = fig.add_subplot(
+            gs[1, :]
         )
 
     else:
 
-        # Österreich: bisherige kompakte Darstellung
-        fig = plt.figure(
-            figsize=(16, 14),
-            facecolor="white"
+        # Österreich: EXAKT ursprüngliches Layout
+        ax = fig.add_subplot(
+            gs[0, :]
         )
 
-        gs = fig.add_gridspec(
-            2,
-            2,
-            height_ratios=[12, 1.25],
-            width_ratios=[4.7, 2.25],
-            hspace=0.045,
-            wspace=0.025
+        summary_ax = fig.add_subplot(
+            gs[1, 0]
         )
 
-    ax = fig.add_subplot(gs[0, 0])
+        legend_ax = fig.add_subplot(
+            gs[1, 1]
+        )
 
-    summary_ax = fig.add_subplot(gs[0, 1])
-
-    legend_ax = fig.add_subplot(gs[1, :])
-
-
-
-    # --------------------------------------------------------
-    # DEUTSCHLAND – GRUNDFLÄCHE
-    # --------------------------------------------------------
+    # ========================================================
+    # KARTE
+    # ========================================================
 
     germany.plot(
         ax=ax,
         color="#e2e2e2",
         edgecolor="#555555",
-        linewidth=0.55,
+        linewidth=0.65,
         zorder=1
     )
+    
+    if country_name == "Schweiz":
+
+        ax.set_anchor("C")
 
     # --------------------------------------------------------
-    # ACHSENBEREICH
+    # KARTENAUSSCHNITT
     # --------------------------------------------------------
 
     xmin, ymin, xmax, ymax = germany.total_bounds
 
-    padx = (xmax - xmin) * 0.025
-    pady = (ymax - ymin) * 0.025
+    padx = (xmax - xmin) * 0.035
+    pady = (ymax - ymin) * 0.055
 
     ax.set_xlim(
         xmin - padx,
@@ -2367,38 +2585,34 @@ def plot_map(
         ymin - pady,
         ymax + pady
     )
-    
-    
+
     # --------------------------------------------------------
-    # BESCHRIFTUNG DER GEOGRAFISCHEN KOORDINATEN
+    # KOORDINATEN
     # --------------------------------------------------------
 
     ax.set_xlabel(
         "Längengrad (°)",
-        fontsize=11,
-        color="#555555",
-        labelpad=5
+        fontsize=10,
+        color="#666666",
+        labelpad=4
     )
 
     ax.set_ylabel(
         "Breitengrad (°)",
-        fontsize=11,
-        color="#555555",
-        labelpad=5
+        fontsize=10,
+        color="#666666",
+        labelpad=4
     )
 
     ax.tick_params(
         axis="both",
-        labelsize=10,
-        colors="#555555"
+        labelsize=9,
+        colors="#666666"
     )
 
-    
-    
-    # --------------------------------------------------------
-    # RÄUMLICHE IDW-INTERPOLATION
-    # ALLE SECHS WETTERPARAMETER
-    # --------------------------------------------------------
+    # ========================================================
+    # IDW-INTERPOLATION
+    # ========================================================
 
     if interpolated:
 
@@ -2407,8 +2621,8 @@ def plot_map(
             gdf=gdf,
             parameter=parameter,
             norm=norm,
-            resolution_x=400,
-            resolution_y=500,
+            resolution_x=500,
+            resolution_y=350,
             neighbors=8,
             power=2.0
         )
@@ -2430,20 +2644,16 @@ def plot_map(
                 zorder=2
             )
 
-            # Bundeslandgrenzen und Außenkontur
-            # erneut über das interpolierte Raster zeichnen
-
             germany.boundary.plot(
                 ax=ax,
                 color="#555555",
-                linewidth=0.55,
+                linewidth=0.65,
                 zorder=4
             )
 
-
-    # --------------------------------------------------------
-    # STATIONEN
-    # --------------------------------------------------------
+    # ========================================================
+    # STATIONEN UND WERTE
+    # ========================================================
 
     valid = gdf[
         gdf[parameter].notna()
@@ -2452,14 +2662,9 @@ def plot_map(
     label_positions = calculate_label_positions(
         ax,
         valid,
-        min_distance=24,
-        iterations=7
+        min_distance=25,
+        iterations=8
     )
-    
-    
-    # --------------------------------------------------------
-    # BESCHRIFTUNGEN
-    # --------------------------------------------------------
 
     for index, row in valid.iterrows():
 
@@ -2475,14 +2680,10 @@ def plot_map(
             text_y = row.geometry.y
 
         # ----------------------------------------------------
-        # SCHRIFTFARBE
+        # SCHRIFTFARBEN
         # ----------------------------------------------------
 
         if interpolated:
-
-            # SONNENSCHEIN:
-            # Automatischer Schwarz-Weiß-Kontrast,
-            # ausschließlich auf interpolierten Karten.
 
             if parameter == "SunD1":
 
@@ -2494,107 +2695,99 @@ def plot_map(
                     rgba
                 )
 
-            # ALLE ANDEREN INTERPOLIERTEN PARAMETER:
-            # Immer schwarze Schrift.
-
             else:
 
                 text_color = "#000000"
 
+        else:
+
+            text_color = "#000000"
+
         ax.text(
             text_x,
             text_y,
-            format_value(value, parameter),
-
+            format_value(
+                value,
+                parameter
+            ),
             fontsize=10,
             fontfamily="DejaVu Sans",
             fontweight="bold",
-
             ha="center",
             va="center",
-
             color=text_color,
-
             zorder=10
         )
 
-    # --------------------------------------------------------
-    # TITEL
-    # --------------------------------------------------------
+    # ========================================================
+    # KARTENTITEL
+    # ========================================================
 
     if number_of_days is None:
-    
+
         map_title = (
-            config["name"]
+            country_name
             + "\n"
             + target_date.strftime("%d.%m.%Y")
         )
-    
+
     else:
 
         map_title = (
-            config["name"]
+            country_name
             + "\n"
             + "bis "
             + target_date.strftime("%d.%m.%Y")
             + f" (Summe über {number_of_days} Tage)"
         )
-    
+
     ax.set_title(
         map_title,
-        fontsize=18,
+        fontsize=19,
         fontweight="bold",
-        pad=4
+        pad=4,
+        color="#222222"
     )
 
-    # --------------------------------------------------------
-    # RECHTE ÜBERSICHT
-    # --------------------------------------------------------
+    # ========================================================
+    # REGIONALE TABELLE
+    # ========================================================
 
     draw_state_summary(
-		summary_ax,
-		state_df,
-		germany_extremes,
-		parameter,
-		created_at,
-		issue_time,
-		country_name
-	)
-    
-    
-    # --------------------------------------------------------
+        summary_ax,
+        state_df,
+        germany_extremes,
+        parameter,
+        created_at,
+        issue_time,
+        country_name
+    )
+
+    # ========================================================
     # LEGENDE
-    # --------------------------------------------------------
+    # ========================================================
 
     draw_parameter_legend(
         legend_ax,
         parameter,
-        number_of_days
+        number_of_days,
+        compact_layout=(country_name == "Schweiz")
     )
 
+    # ========================================================
+    # GESAMTLAYOUT
+    # ========================================================
 
-    
-    # --------------------------------------------------------
+    fig.subplots_adjust(
+        left=0.045,
+        right=0.975,
+        top=0.925,
+        bottom=0.045
+    )
+
+    # ========================================================
     # SPEICHERN
-    # --------------------------------------------------------
-
-    if is_switzerland:
-
-        fig.subplots_adjust(
-            left=0.035,
-            right=0.975,
-            top=0.975,
-            bottom=0.035
-        )
-
-    else:
-
-        fig.subplots_adjust(
-            left=0.025,
-            right=0.975,
-            top=0.965,
-            bottom=0.035
-        )
+    # ========================================================
 
     fig.savefig(
         output_file,
