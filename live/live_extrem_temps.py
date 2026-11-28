@@ -849,7 +849,6 @@ def format_temperature(value):
     return (
         f"{value:.1f}"
         .replace(".", ",")
-        + "°"
     )
 
 
@@ -1883,12 +1882,12 @@ def main():
     for parameter, title, output_file in [
         (
             "TXK",
-            "Höchste Temperatur (TXK)",
+            "Höchsttemperatur (°C)",
             TXK_OUTPUT
         ),
         (
             "TNK",
-            "Niedrigste Temperatur (TNK)",
+            "Tiefsttemperatur (°C)",
             TNK_OUTPUT
         )
     ]:
