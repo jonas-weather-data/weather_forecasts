@@ -9,6 +9,11 @@ import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+import numpy as np
+from scipy.spatial import cKDTree
+from pyproj import Transformer
+from shapely.ops import unary_union
+from shapely import vectorized
 
 from matplotlib.colors import (
     LinearSegmentedColormap,
@@ -849,208 +854,371 @@ def format_temperature(value):
 
 
 # ============================================================
-# FARBSKALEN
+# FARBSKALEN UND INTERPOLATION
 # ============================================================
 
-TXK_NORM = Normalize(
-    vmin=-20,
-    vmax=50,
-    clip=True
-)
+PLOT_STYLES = {
 
-TNK_NORM = Normalize(
-    vmin=-30,
-    vmax=30,
-    clip=True
-)
+    "TXK": {
+        "vmin": -20,
+        "vmax": 50,
+        "colors": [
+            (0.00, "#08306b"),
+            (0.20, "#6baed6"),
+            (0.35, "#31a354"),
+            (0.50, "#ffff66"),
+            (0.64, "#fdae61"),
+            (0.71, "#e31a1c"),
+            (0.79, "#99000d"),
+            (0.86, "#6a3d9a"),
+            (0.93, "#c51b8a"),
+            (1.00, "#f768a1")
+        ]
+    },
+
+    # --------------------------------------------------------
+    # TAGESTIEFSTTEMPERATUR – TN
+    # Exakt deine bisherige Farbskala
+    # --------------------------------------------------------,
+
+    "TNK": {
+        "vmin": -30,
+        "vmax": 30,
+        "colors": [
+            (0.00, "#6a00a8"),
+            (0.17, "#084594"),
+            (0.33, "#2171b5"),
+            (0.50, "#9ecae1"),
+            (0.58, "#238b45"),
+            (0.67, "#ffff66"),
+            (0.75, "#fd8d3c"),
+            (0.83, "#e31a1c"),
+            (0.92, "#99000d"),
+            (1.00, "#67000d")
+        ]
+    },
+
+    # --------------------------------------------------------
+    # TAGESMITTELTEMPERATUR – TTT
+    # Gleiche Farbfolge wie TX, aber bis +35 °C
+    # --------------------------------------------------------
+
+}
 
 
-TXK_CMAP = LinearSegmentedColormap.from_list(
-    "txk",
-    [
+def get_parameter_cmap(parameter):
 
-        (0.00, "#08306b"),   # -20
+    style = PLOT_STYLES[parameter]
 
-        (0.20, "#6baed6"),   # -6
-
-        (0.35, "#31a354"),   # 4
-
-        (0.50, "#ffff66"),   # 15
-
-        (0.64, "#fdae61"),   # 25
-
-        (0.71, "#e31a1c"),   # 30
-
-        (0.79, "#99000d"),   # 35
-
-        (0.86, "#6a3d9a"),   # 40
-
-        (0.93, "#c51b8a"),   # 45
-
-        (1.00, "#f768a1")    # 50
-
-    ]
-)
-
-
-TNK_CMAP = LinearSegmentedColormap.from_list(
-    "tnk",
-    [
-
-        (0.00, "#6a00a8"),   # -30
-
-        (0.17, "#084594"),   # -20
-
-        (0.33, "#2171b5"),   # -10
-
-        (0.50, "#9ecae1"),   # 0
-
-        (0.58, "#238b45"),   # 5
-
-        (0.67, "#ffff66"),   # 10
-
-        (0.75, "#fd8d3c"),   # 15
-
-        (0.83, "#e31a1c"),   # 20
-
-        (0.92, "#99000d"),   # 25
-
-        (1.00, "#67000d")    # 30
-
-    ]
-)
-
-def txk_text_color(value):
-
-    return mcolors.to_hex(
-        TXK_CMAP(
-            TXK_NORM(value)
-        )
+    return LinearSegmentedColormap.from_list(
+        parameter,
+        style["colors"]
     )
 
 
-def tnk_text_color(value):
+def get_parameter_norm(parameter):
 
-    return mcolors.to_hex(
-        TNK_CMAP(
-            TNK_NORM(value)
+    style = PLOT_STYLES[parameter]
+
+    return Normalize(
+        vmin=style["vmin"],
+        vmax=style["vmax"],
+        clip=True
+    )
+
+
+def interpolate(
+    germany,
+    gdf,
+    parameter,
+    resolution_x=400,
+    resolution_y=500,
+    neighbors=8,
+    power=2.0
+):
+
+    valid = gdf[
+        gdf[parameter].notna()
+    ].copy()
+
+    if len(valid) < 3:
+        return None
+
+    if gdf.crs is None:
+        raise ValueError(
+            "Stationsdaten besitzen kein Koordinatenreferenzsystem."
+        )
+
+    transformer = Transformer.from_crs(
+        gdf.crs,
+        "EPSG:3035",
+        always_xy=True
+    )
+
+    station_x, station_y = transformer.transform(
+        valid.geometry.x.to_numpy(),
+        valid.geometry.y.to_numpy()
+    )
+
+    station_coordinates = np.column_stack((
+        station_x,
+        station_y
+    ))
+
+    station_values = valid[parameter].to_numpy(
+        dtype=float
+    )
+
+    xmin, ymin, xmax, ymax = germany.total_bounds
+
+    x_values = np.linspace(
+        xmin,
+        xmax,
+        resolution_x
+    )
+
+    y_values = np.linspace(
+        ymin,
+        ymax,
+        resolution_y
+    )
+
+    grid_x, grid_y = np.meshgrid(
+        x_values,
+        y_values
+    )
+
+    grid_x_projected, grid_y_projected = (
+        transformer.transform(
+            grid_x,
+            grid_y
         )
     )
 
+    grid_coordinates = np.column_stack((
+        grid_x_projected.ravel(),
+        grid_y_projected.ravel()
+    ))
+
+    tree = cKDTree(
+        station_coordinates
+    )
+
+    k = min(
+        neighbors,
+        len(valid)
+    )
+
+    distances, indices = tree.query(
+        grid_coordinates,
+        k=k
+    )
+
+    if k == 1:
+        distances = distances[:, None]
+        indices = indices[:, None]
+
+    weights = 1.0 / np.maximum(
+        distances,
+        0.001
+    ) ** power
+
+    exact = distances[:, 0] < 0.001
+
+    interpolated = np.sum(
+        weights * station_values[indices],
+        axis=1
+    ) / np.sum(
+        weights,
+        axis=1
+    )
+
+    interpolated[exact] = station_values[
+        indices[exact, 0]
+    ]
+
+    interpolated = interpolated.reshape(
+        grid_x.shape
+    )
+
+    germany_geometry = unary_union(
+        germany.geometry
+    )
+
+    inside = vectorized.contains(
+        germany_geometry,
+        grid_x,
+        grid_y
+    )
+
+    interpolated = np.ma.masked_where(
+        ~inside,
+        interpolated
+    )
+
+    return (
+        grid_x,
+        grid_y,
+        interpolated
+    )
+
+
+def draw_parameter_legend(
+    ax,
+    parameter
+):
+
+    cmap = get_parameter_cmap(parameter)
+    norm = get_parameter_norm(parameter)
+
+    if parameter == "TXK":
+        ticks = list(range(-20, 51, 5))
+        title = "Höchsttemperatur in °C"
+    else:
+        ticks = list(range(-30, 31, 5))
+        title = "Tiefsttemperatur in °C"
+
+    ax.clear()
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.axis("off")
+
+    ax.text(
+        0.5,
+        0.91,
+        title,
+        transform=ax.transAxes,
+        ha="center",
+        va="center",
+        fontsize=11,
+        fontweight="bold",
+        color="#333333"
+    )
+
+    gradient_array = [[
+        cmap(
+            norm(
+                norm.vmin
+                + (norm.vmax - norm.vmin) * i / 255
+            )
+        )
+        for i in range(256)
+    ]]
+
+    ax.imshow(
+        gradient_array,
+        extent=[0.08, 0.92, 0.48, 0.72],
+        aspect="auto",
+        interpolation="nearest"
+    )
+
+    for value in ticks:
+        x = 0.08 + (
+            (value - norm.vmin)
+            / (norm.vmax - norm.vmin)
+        ) * 0.84
+
+        if x < 0.08 or x > 0.92:
+            continue
+
+        ax.plot(
+            [x, x],
+            [0.44, 0.48],
+            transform=ax.transAxes,
+            color="#555555",
+            linewidth=0.6
+        )
+
+        ax.text(
+            x,
+            0.34,
+            str(value),
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+            fontsize=10.5,
+            color="#333333"
+        )
+
+
 # ============================================================
-# BUNDESLAND-EXTREME
+# BUNDESLAND- UND DEUTSCHLAND-STATISTIK
 # ============================================================
 
 def calculate_state_extremes(
-    gdf
+    gdf,
+    parameter
 ):
-
-    valid_tx = gdf[
-        gdf["txk"].notna()
-    ].copy()
-
-    valid_tn = gdf[
-        gdf["tnk"].notna()
-    ].copy()
 
     states = []
 
     bundeslaender = sorted(
-        gdf[
-            "bundesland"
-        ]
+        gdf["bundesland"]
         .dropna()
         .unique()
     )
 
     for bundesland in bundeslaender:
 
-        tx = valid_tx[
-            valid_tx["bundesland"]
-            == bundesland
-        ]
-
-        tn = valid_tn[
-            valid_tn["bundesland"]
-            == bundesland
-        ]
+        values = gdf.loc[
+            gdf["bundesland"] == bundesland,
+            parameter
+        ].dropna()
 
         states.append({
 
-            "bundesland":
-                bundesland,
+            "bundesland": bundesland,
 
-            "txk_min": (
-                tx["txk"].min()
-                if not tx.empty
+            "min": (
+                values.min()
+                if not values.empty
                 else None
             ),
 
-            "txk_max": (
-                tx["txk"].max()
-                if not tx.empty
+            "mean": (
+                values.mean()
+                if not values.empty
                 else None
             ),
 
-            "tnk_min": (
-                tn["tnk"].min()
-                if not tn.empty
-                else None
-            ),
-
-            "tnk_max": (
-                tn["tnk"].max()
-                if not tn.empty
+            "max": (
+                values.max()
+                if not values.empty
                 else None
             )
+
         })
 
-    return pd.DataFrame(
-        states
-    )
+    return pd.DataFrame(states)
 
-
-# ============================================================
-# DEUTSCHLAND-GESAMTWERTE
-# ============================================================
 
 def calculate_germany_extremes(
-    gdf
+    gdf,
+    parameter
 ):
 
-    valid_tx = gdf[
-        gdf["txk"].notna()
-    ]
-
-    valid_tn = gdf[
-        gdf["tnk"].notna()
-    ]
+    values = gdf[parameter].dropna()
 
     return {
 
-        "txk_min": (
-            valid_tx["txk"].min()
-            if not valid_tx.empty
+        "min": (
+            values.min()
+            if not values.empty
             else None
         ),
 
-        "txk_max": (
-            valid_tx["txk"].max()
-            if not valid_tx.empty
+        "mean": (
+            values.mean()
+            if not values.empty
             else None
         ),
 
-        "tnk_min": (
-            valid_tn["tnk"].min()
-            if not valid_tn.empty
-            else None
-        ),
-
-        "tnk_max": (
-            valid_tn["tnk"].max()
-            if not valid_tn.empty
+        "max": (
+            values.max()
+            if not values.empty
             else None
         )
+
     }
 
 
@@ -1204,98 +1372,55 @@ def draw_state_summary(
 
     ax.axis("off")
 
-    if parameter == "TXK":
-
-        value_columns = [
-            ("TXK ↑", "txk_max"),
-            ("TXK ↓", "txk_min")
-        ]
-
-        accent = "#a50026"
-
-        germany_values = (
-            germany_extremes["txk_max"],
-            germany_extremes["txk_min"]
-        )
-
-    else:
-
-        value_columns = [
-            ("TNK ↑", "tnk_max"),
-            ("TNK ↓", "tnk_min")
-        ]
-
-        accent = "#225ea8"
-
-        germany_values = (
-            germany_extremes["tnk_max"],
-            germany_extremes["tnk_min"]
-        )
-
-    # ========================================================
-    # INFORMATIONSBLOCK OBEN
-    # ========================================================
+    accent = "#a50026"
 
     ax.text(
-        0.0,
-        0.995,
+        0.0, 0.995,
         "Datenstand",
         transform=ax.transAxes,
-        fontsize=8.5,
+        fontsize=11,
         fontweight="bold",
         va="top",
         color="#555555"
     )
 
     ax.text(
-        0.0,
-        0.963,
+        0.0, 0.963,
         "Daten bis",
         transform=ax.transAxes,
-        fontsize=8.0,
+        fontsize=10.5,
         va="top",
         color="#777777"
     )
 
     ax.text(
-        1.0,
-        0.963,
-        data_until.strftime(
-            "%d.%m.%Y %H:%M"
-        ) + " Uhr",
+        1.0, 0.963,
+        data_until.strftime("%d.%m.%Y %H:%M") + " Uhr",
         transform=ax.transAxes,
-        fontsize=8.0,
+        fontsize=10.5,
         ha="right",
         va="top",
         color="#333333"
     )
 
     ax.text(
-        0.0,
-        0.925,
+        0.0, 0.925,
         "Erstellt am",
         transform=ax.transAxes,
-        fontsize=8.0,
+        fontsize=10.5,
         va="top",
         color="#777777"
     )
 
     ax.text(
-        1.0,
-        0.925,
-        created_at.strftime(
-            "%d.%m.%Y %H:%M:%S"
-        ) + " Uhr",
+        1.0, 0.925,
+        created_at.strftime("%d.%m.%Y %H:%M:%S") + " Uhr",
         transform=ax.transAxes,
-        fontsize=8.0,
+        fontsize=10.5,
         ha="right",
         va="top",
         color="#333333"
     )
-
-    # ========================================================
-    # TRENNLINIE
-    # ========================================================
 
     ax.plot(
         [0.0, 1.0],
@@ -1306,44 +1431,33 @@ def draw_state_summary(
         clip_on=False
     )
 
-    # ========================================================
-    # HEADER
-    # ========================================================
-
     ax.text(
-        0.0,
-        0.845,
+        0.0, 0.845,
         "Bundesland",
         transform=ax.transAxes,
-        fontsize=9.0,
+        fontsize=11,
         fontweight="bold",
         va="top",
         color="#333333"
     )
 
-    ax.text(
-        0.68,
-        0.845,
-        value_columns[0][0],
-        transform=ax.transAxes,
-        fontsize=9.0,
-        fontweight="bold",
-        ha="center",
-        va="top",
-        color=accent
-    )
+    columns = [
+        (0.68, "MAX"),
+        (0.84, "Ø"),
+        (0.98, "MIN")
+    ]
 
-    ax.text(
-        0.91,
-        0.845,
-        value_columns[1][0],
-        transform=ax.transAxes,
-        fontsize=9.0,
-        fontweight="bold",
-        ha="center",
-        va="top",
-        color=accent
-    )
+    for x, label in columns:
+        ax.text(
+            x, 0.845,
+            label,
+            transform=ax.transAxes,
+            fontsize=10.5,
+            fontweight="bold",
+            ha="center",
+            va="top",
+            color=accent
+        )
 
     ax.plot(
         [0.0, 1.0],
@@ -1354,12 +1468,7 @@ def draw_state_summary(
         clip_on=False
     )
 
-    # ========================================================
-    # BUNDESLÄNDER
-    # ========================================================
-
     y = 0.775
-
     line_height = 0.0415
 
     for _, row in state_df.iterrows():
@@ -1369,19 +1478,18 @@ def draw_state_summary(
             y,
             row["bundesland"],
             transform=ax.transAxes,
-            fontsize=7.9,
-            fontweight="normal",
+            fontsize=10.5,
             va="center",
             color="#333333"
         )
 
-        for x, (_, column) in zip(
-            (0.68, 0.91),
-            value_columns
-        ):
+        values = [
+            row["max"],
+            row["mean"],
+            row["min"]
+        ]
 
-            value = row[column]
-
+        for (x, _), value in zip(columns, values):
             text = (
                 format_temperature(value)
                 if pd.notna(value)
@@ -1393,17 +1501,13 @@ def draw_state_summary(
                 y,
                 text,
                 transform=ax.transAxes,
-                fontsize=7.9,
+                fontsize=10.5,
                 ha="center",
                 va="center",
                 color="#333333"
             )
 
         y -= line_height
-
-    # ========================================================
-    # DEUTSCHLAND
-    # ========================================================
 
     y -= 0.012
 
@@ -1421,17 +1525,19 @@ def draw_state_summary(
         y,
         "Deutschland",
         transform=ax.transAxes,
-        fontsize=8.2,
+        fontsize=10.5,
         fontweight="bold",
         va="center",
         color="#222222"
     )
 
-    for x, value in zip(
-        (0.68, 0.91),
-        germany_values
-    ):
+    values = [
+        germany_extremes["max"],
+        germany_extremes["mean"],
+        germany_extremes["min"]
+    ]
 
+    for (x, _), value in zip(columns, values):
         text = (
             format_temperature(value)
             if pd.notna(value)
@@ -1443,7 +1549,7 @@ def draw_state_summary(
             y,
             text,
             transform=ax.transAxes,
-            fontsize=8.2,
+            fontsize=10.5,
             fontweight="bold",
             ha="center",
             va="center",
@@ -1472,69 +1578,45 @@ def plot_map(
         f"      Erstelle {output_file} ..."
     )
 
-    if parameter == "TXK":
+    column = (
+        "txk"
+        if parameter == "TXK"
+        else "tnk"
+    )
 
-        column = "txk"
-        color_function = txk_text_color
-
-    else:
-
-        column = "tnk"
-        color_function = tnk_text_color
-
-    # ========================================================
-    # FIGURE
-    # ========================================================
+    cmap = get_parameter_cmap(parameter)
+    norm = get_parameter_norm(parameter)
 
     fig = plt.figure(
-        figsize=(15, 13),
+        figsize=(15, 14),
         facecolor="white"
     )
 
     gs = fig.add_gridspec(
-        1,
         2,
-        width_ratios=[
-            4.7,
-            1.55
-        ],
-        wspace=0.025
+        2,
+        height_ratios=[12, 1.25],
+        width_ratios=[4.7, 2.25],
+        hspace=0.06,
+        wspace=0.005
     )
 
-    ax = fig.add_subplot(
-        gs[0, 0]
-    )
-
-    summary_ax = fig.add_subplot(
-        gs[0, 1]
-    )
-
-    # ========================================================
-    # DEUTSCHLAND
-    # ========================================================
+    ax = fig.add_subplot(gs[0, 0])
+    summary_ax = fig.add_subplot(gs[0, 1])
+    legend_ax = fig.add_subplot(gs[1, :])
 
     germany.plot(
         ax=ax,
-        color="#eeeeee",
+        color="#e2e2e2",
         edgecolor="#555555",
-        linewidth=0.55
+        linewidth=0.55,
+        zorder=1
     )
 
-    # ========================================================
-    # ACHSENBEREICH
-    # ========================================================
+    xmin, ymin, xmax, ymax = germany.total_bounds
 
-    xmin, ymin, xmax, ymax = (
-        germany.total_bounds
-    )
-
-    padx = (
-        xmax - xmin
-    ) * 0.025
-
-    pady = (
-        ymax - ymin
-    ) * 0.025
+    padx = (xmax - xmin) * 0.025
+    pady = (ymax - ymin) * 0.025
 
     ax.set_xlim(
         xmin - padx,
@@ -1546,83 +1628,100 @@ def plot_map(
         ymax + pady
     )
 
-    # ========================================================
-    # STATIONEN
-    # ========================================================
+    ax.set_xlabel(
+        "Längengrad (°)",
+        fontsize=11,
+        color="#555555",
+        labelpad=5
+    )
+
+    ax.set_ylabel(
+        "Breitengrad (°)",
+        fontsize=11,
+        color="#555555",
+        labelpad=5
+    )
+
+    ax.tick_params(
+        axis="both",
+        labelsize=10,
+        colors="#555555"
+    )
+
+    interpolation = interpolate(
+        germany=germany,
+        gdf=gdf,
+        parameter=column,
+        resolution_x=400,
+        resolution_y=500,
+        neighbors=8,
+        power=2.0
+    )
+
+    if interpolation is not None:
+
+        grid_x, grid_y, interpolated_values = interpolation
+
+        ax.pcolormesh(
+            grid_x,
+            grid_y,
+            interpolated_values,
+            cmap=cmap,
+            norm=norm,
+            shading="auto",
+            alpha=0.96,
+            zorder=2
+        )
+
+        germany.boundary.plot(
+            ax=ax,
+            color="#555555",
+            linewidth=0.55,
+            zorder=4
+        )
 
     valid = gdf[
         gdf[column].notna()
     ].copy()
 
-    label_positions = (
-        calculate_label_positions(
-            ax,
-            valid,
-            column,
-            min_distance=24,
-            iterations=7
-        )
+    label_positions = calculate_label_positions(
+        ax,
+        valid,
+        min_distance=24,
+        iterations=7
     )
-
-    # ========================================================
-    # BESCHRIFTUNGEN
-    # ========================================================
 
     for index, row in valid.iterrows():
 
         value = row[column]
 
         if index in label_positions:
-
-            text_x, text_y = (
-                label_positions[index]
-            )
-
+            text_x, text_y = label_positions[index]
         else:
-
             text_x = row.geometry.x
             text_y = row.geometry.y
 
         ax.text(
             text_x,
             text_y,
-            format_temperature(
-                value
-            ),
-            fontsize=9.0,
+            format_temperature(value),
+            fontsize=10,
+            fontfamily="DejaVu Sans",
             fontweight="bold",
             ha="center",
             va="center",
-            color=color_function(
-                value
-            ),
+            color="#000000",
             zorder=10
         )
 
-    # ========================================================
-    # TITEL
-    # ========================================================
-
-    date_string = (
-        target_date.strftime(
-            "%d.%m.%Y"
-        )
-    )
+    date_string = target_date.strftime("%d.%m.%Y")
 
     ax.set_title(
         f"{title}\n{date_string}",
         fontsize=18,
         fontweight="bold",
-        pad=14
+        pad=4
     )
-
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.axis("off")
-
-    # ========================================================
-    # ZUSAMMENFASSUNG
-    # ========================================================
 
     draw_state_summary(
         summary_ax,
@@ -1633,21 +1732,24 @@ def plot_map(
         data_until
     )
 
-    # ========================================================
-    # SPEICHERN
-    # ========================================================
+    draw_parameter_legend(
+        legend_ax,
+        parameter
+    )
 
     fig.subplots_adjust(
         left=0.02,
-        right=0.985,
-        top=0.94,
-        bottom=0.02
+        right=0.97,
+        top=0.96,
+        bottom=0.025
     )
 
     fig.savefig(
         output_file,
-        dpi=200,
-        facecolor="white"
+        dpi=65,
+        facecolor="white",
+        edgecolor="none",
+        format="png"
     )
 
     plt.close(fig)
@@ -1754,26 +1856,6 @@ def main():
     )
 
     # ========================================================
-    # BUNDESLAND-EXTREME
-    # ========================================================
-
-    state_df = (
-        calculate_state_extremes(
-            gdf
-        )
-    )
-
-    # ========================================================
-    # DEUTSCHLAND-GESAMTWERTE
-    # ========================================================
-
-    germany_extremes = (
-        calculate_germany_extremes(
-            gdf
-        )
-    )
-
-    # ========================================================
     # SHAPEFILE EINMALIG LADEN
     # ========================================================
 
@@ -1797,31 +1879,41 @@ def main():
         "[7/8] Erstelle Karten ..."
     )
 
-    plot_map(
-        germany=germany,
-        gdf=gdf,
-        state_df=state_df,
-        germany_extremes=germany_extremes,
-        parameter="TXK",
-        target_date=target_date,
-        title="Höchste Temperatur (TXK)",
-        output_file=TXK_OUTPUT,
-        created_at=created_at,
-        data_until=data_until
-    )
+    for parameter, title, output_file in [
+        (
+            "TXK",
+            "Höchste Temperatur (TXK)",
+            TXK_OUTPUT
+        ),
+        (
+            "TNK",
+            "Niedrigste Temperatur (TNK)",
+            TNK_OUTPUT
+        )
+    ]:
 
-    plot_map(
-        germany=germany,
-        gdf=gdf,
-        state_df=state_df,
-        germany_extremes=germany_extremes,
-        parameter="TNK",
-        target_date=target_date,
-        title="Niedrigste Temperatur (TNK)",
-        output_file=TNK_OUTPUT,
-        created_at=created_at,
-        data_until=data_until
-    )
+        state_df = calculate_state_extremes(
+            gdf,
+            parameter.lower()
+        )
+
+        germany_extremes = calculate_germany_extremes(
+            gdf,
+            parameter.lower()
+        )
+
+        plot_map(
+            germany=germany,
+            gdf=gdf,
+            state_df=state_df,
+            germany_extremes=germany_extremes,
+            parameter=parameter,
+            target_date=target_date,
+            title=title,
+            output_file=output_file,
+            created_at=created_at,
+            data_until=data_until
+        )
 
     # ========================================================
     # 8. FERTIG
