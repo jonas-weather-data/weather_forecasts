@@ -1687,6 +1687,7 @@ def plot_map(
     label_positions = calculate_label_positions(
         ax,
         valid,
+        column,
         min_distance=24,
         iterations=7
     )
