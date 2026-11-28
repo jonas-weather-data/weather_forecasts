@@ -1,3 +1,4 @@
+
 name: DWD Live Extremtemperaturen
 
 permissions:
@@ -46,12 +47,19 @@ jobs:
         run: |
           Get-ChildItem .\live\output
 
-          if (!(Test-Path .\live\output\extrema_txk.png)) {
-            Write-Error "extrema_txk.png wurde nicht erzeugt."
-          }
+          $files = @(
+            "extrema_txk.png",
+            "extrema_tnk.png",
+            "extrema_ttt.png",
+            "extrema_sund1.png",
+            "extrema_rr1c.png",
+            "extrema_fx1.png"
+          )
 
-          if (!(Test-Path .\live\output\extrema_tnk.png)) {
-            Write-Error "extrema_tnk.png wurde nicht erzeugt."
+          foreach ($file in $files) {
+            if (!(Test-Path ".\live\output\$file")) {
+              Write-Error "$file wurde nicht erzeugt."
+            }
           }
 
       - name: Commit and push PNGs
@@ -62,6 +70,10 @@ jobs:
 
           git add .\live\output\extrema_txk.png
           git add .\live\output\extrema_tnk.png
+          git add .\live\output\extrema_ttt.png
+          git add .\live\output\extrema_sund1.png
+          git add .\live\output\extrema_rr1c.png
+          git add .\live\output\extrema_fx1.png
 
           git commit -m "DWD Live-Extremtemperaturkarten aktualisieren" `
             || Write-Host "Keine Änderungen vorhanden."
