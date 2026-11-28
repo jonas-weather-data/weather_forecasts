@@ -198,6 +198,227 @@ def load_station_list():
 # DWD-NOW-DATEIEN
 # ============================================================
 
+# ============================================================
+# ZUSÄTZLICHE DWD-NOW-DATENSÄTZE
+# ============================================================
+
+PARAMETER_DATASETS = {
+    "TTT": {
+        "directory": "air_temperature",
+        "pattern": r'10minutenwerte_TU_(\d{5})_now\.zip',
+        "prefix": "10minutenwerte_TU_",
+        "field": "TT_10",
+        "index": 4,
+        "aggregation": "mean",
+        "title": "Tagesmitteltemperatur (°C)",
+        "filename": "ttt"
+    },
+    "SunD1": {
+        "directory": "solar",
+        "pattern": r'10minutenwerte_SOLAR_(\d{5})_now\.zip',
+        "prefix": "10minutenwerte_SOLAR_",
+        "field": "SD_10",
+        "index": 5,
+        "aggregation": "sum",
+        "title": "Sonnenscheindauer (h)",
+        "filename": "sund1"
+    },
+    "RR1c": {
+        "directory": "precipitation",
+        "pattern": r'10minutenwerte_nieder_(\d{5})_now\.zip',
+        "prefix": "10minutenwerte_nieder_",
+        "field": "RWS_10",
+        "index": 4,
+        "aggregation": "sum",
+        "title": "Niederschlagsmenge (mm)",
+        "filename": "rr1c"
+    },
+    "FX1": {
+        "directory": "extreme_wind",
+        "pattern": r'10minutenwerte_extrema_wind_(\d{5})_now\.zip',
+        "prefix": "10minutenwerte_extrema_wind_",
+        "field": "FX_10",
+        "index": 3,
+        "aggregation": "max",
+        "title": "Stärkste Windböe (km/h)",
+        "filename": "fx1"
+    }
+}
+
+DWD_10MINUTES_BASE_URL = (
+    "https://opendata.dwd.de/climate_environment/CDC/"
+    "observations_germany/climate/10_minutes/"
+)
+
+
+def get_parameter_now_files(parameter, station_ids):
+
+    config = PARAMETER_DATASETS[parameter]
+    url = (
+        DWD_10MINUTES_BASE_URL
+        + config["directory"]
+        + "/now/"
+    )
+
+    response = get(url)
+    matches = re.findall(
+        config["pattern"],
+        response.text,
+        flags=re.IGNORECASE
+    )
+
+    station_ids = set(station_ids)
+    files = {
+        station_id: config["prefix"] + station_id + "_now.zip"
+        for station_id in matches
+        if station_id in station_ids
+    }
+
+    log(
+        f"      {parameter}: {len(files)} passende DWD-Stationsdateien."
+    )
+
+    if not files:
+        raise RuntimeError(
+            f"Keine DWD-now-Dateien für {parameter} in stationen_extreme.csv gefunden."
+        )
+
+    return files
+
+
+def process_parameter_station(
+    parameter,
+    station_id,
+    filename,
+    target_date
+):
+
+    config = PARAMETER_DATASETS[parameter]
+    url = (
+        DWD_10MINUTES_BASE_URL
+        + config["directory"]
+        + "/now/"
+        + filename
+    )
+
+    response = get(url)
+    day_start = pd.Timestamp(target_date, tz="UTC")
+    day_end = day_start + pd.Timedelta(hours=23, minutes=50)
+    values = []
+
+    with zipfile.ZipFile(BytesIO(response.content)) as archive:
+        entry = next(
+            (
+                item for item in archive.infolist()
+                if item.filename.lower().endswith(".txt")
+                and os.path.basename(item.filename).lower().startswith("produkt_zehn_")
+            ),
+            None
+        )
+
+        if entry is None:
+            raise RuntimeError("Keine produkt_zehn_*.txt-Datei gefunden.")
+
+        with archive.open(entry) as stream:
+            for raw_line in stream:
+                line = raw_line.decode("cp1252", errors="replace").strip()
+                if not line or line.startswith("STATIONS_ID"):
+                    continue
+
+                fields = [field.strip() for field in line.split(";")]
+                if fields and fields[-1].lower() == "eor":
+                    fields = fields[:-1]
+
+                if len(fields) <= config["index"]:
+                    continue
+
+                try:
+                    timestamp = pd.to_datetime(
+                        fields[1],
+                        format="%Y%m%d%H%M",
+                        utc=True
+                    )
+                except (ValueError, TypeError):
+                    try:
+                        timestamp = pd.to_datetime(
+                            fields[1],
+                            format="%Y%m%d%H",
+                            utc=True
+                        )
+                    except (ValueError, TypeError):
+                        continue
+
+                if timestamp < day_start or timestamp > day_end:
+                    continue
+
+                value = parse_nullable_decimal(fields[config["index"]])
+                if value is None:
+                    continue
+
+                if parameter == "FX1":
+                    value *= 3.6
+
+                values.append((timestamp, value))
+
+    if not values:
+        raise RuntimeError(f"Keine gültigen {config['field']}-Werte für {target_date}.")
+
+    values.sort(key=lambda item: item[0])
+    numeric_values = [value for _, value in values]
+
+    if config["aggregation"] == "mean":
+        result_value = sum(numeric_values) / len(numeric_values)
+    elif config["aggregation"] == "sum":
+        result_value = sum(numeric_values)
+    else:
+        result_value = max(numeric_values)
+
+    return {
+        "station_id": station_id,
+        "value": result_value,
+        "data_until": values[-1][0].tz_convert("Europe/Berlin")
+    }
+
+
+def process_parameter_all(parameter, files, target_date):
+
+    results = []
+
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = {
+            executor.submit(
+                process_parameter_station,
+                parameter,
+                station_id,
+                filename,
+                target_date
+            ): station_id
+            for station_id, filename in files.items()
+        }
+
+        for future in as_completed(futures):
+            station_id = futures[future]
+            try:
+                results.append(future.result())
+            except Exception as exc:
+                log(f"      FEHLER {parameter} {station_id}: {exc}")
+
+    if not results:
+        raise RuntimeError(f"Keine Station konnte für {parameter} verarbeitet werden.")
+
+    counts = pd.Series(
+        [result["data_until"] for result in results]
+    ).value_counts()
+    data_until = counts.index[0]
+
+    log(
+        f"      {parameter}: {len(results)} Stationen erfolgreich; "
+        f"Daten bis {data_until.strftime('%d.%m.%Y %H:%M')} Uhr."
+    )
+
+    return results, data_until
+
+
 def get_now_files():
 
     log(
@@ -902,6 +1123,105 @@ PLOT_STYLES = {
     # Gleiche Farbfolge wie TX, aber bis +35 °C
     # --------------------------------------------------------
 
+
+    "TTT": {
+        "vmin": -20,
+        "vmax": 35,
+        "colors": [
+            (0.000, "#08306b"),  # -20
+            (0.255, "#6baed6"),  # -6
+            (0.405, "#31a354"),  #  2
+            (0.520, "#ffff66"),  #  8,6
+            (0.655, "#fdae61"),  # 16
+            (0.735, "#e31a1c"),  # 20,4
+            (0.815, "#99000d"),  # 24,8
+            (0.880, "#6a3d9a"),  # 28,4
+            (0.945, "#c51b8a"),  # 32
+            (1.000, "#f768a1")   # 35
+        ]
+    },
+
+    "SunD1": {
+        "vmin": 0,
+        "vmax": 16,
+        "colors": [
+            (0.00, "#303030"),
+            (0.10, "#555555"),
+            (0.20, "#858585"),
+            (0.28, "#aaaaaa"),
+            (0.35, "#d6c94c"),
+            (0.43, "#ffe600"),
+            (0.55, "#ffc400"),
+            (0.65, "#ff9f00"),
+            (0.75, "#ff7300"),
+            (0.84, "#ed3b18"),
+            (0.92, "#b80000"),
+            (1.00, "#650000")
+        ]
+    },
+
+    "RR1c": {
+        "vmin": 0,
+        "vmax": 50,
+        "colors": [
+            (0.00, "#a6d8f0"),
+            (0.08, "#65b9e5"),
+            (0.18, "#258bd0"),
+            (0.30, "#0868b2"),
+            (0.42, "#084b91"),
+            (0.55, "#08306b"),
+            (0.68, "#302080"),
+            (0.80, "#653399"),
+            (0.90, "#a83fa5"),
+            (0.96, "#d45eae"),
+            (1.00, "#f080c5")
+        ]
+    },
+
+    "FX1": {
+        "vmin": 0,
+        "vmax": 140,
+        "colors": [
+            (0.0000, "#e2e2e2"),  # 0 Bft
+            (0.0071, "#d9d9d9"),
+
+            (0.0357, "#b8d8e8"),  # 1 Bft
+            (0.0429, "#8fc5df"),
+
+            (0.0786, "#70b5d8"),  # 2 Bft
+            (0.0857, "#4299c8"),
+
+            (0.1357, "#55b96b"),  # 3 Bft
+            (0.1429, "#238b45"),
+
+            (0.2000, "#c6df42"),  # 4 Bft
+            (0.2071, "#e4df35"),
+
+            (0.2714, "#ffff66"),  # 5 Bft
+            (0.2786, "#ffca45"),
+
+            (0.3500, "#ffad32"),  # 6 Bft
+            (0.3571, "#ff8225"),
+
+            (0.4357, "#ff641e"),  # 7 Bft
+            (0.4429, "#ed351c"),
+
+            (0.5286, "#e51d25"),  # 8 Bft
+            (0.5357, "#bd0026"),
+
+            (0.6286, "#a50026"),  # 9 Bft
+            (0.6357, "#800026"),
+
+            (0.7286, "#702080"),  # 10 Bft
+            (0.7357, "#54278f"),
+
+            (0.8357, "#a32ca5"),  # 11 Bft
+            (0.8429, "#c51b8a"),
+
+            (0.8500, "#e45ca8"),  # 12 Bft
+            (1.0000, "#f768a1")
+        ]
+    },
 }
 
 
@@ -1064,23 +1384,115 @@ def interpolate(
 
 def draw_parameter_legend(
     ax,
-    parameter
+    parameter,
+    number_of_days=None
 ):
 
+    style = PLOT_STYLES[parameter]
+
     cmap = get_parameter_cmap(parameter)
-    norm = get_parameter_norm(parameter)
+
+    # --------------------------------------------------------
+    # NORMIERUNG UND BESCHRIFTUNGEN
+    # --------------------------------------------------------
+
+    if number_of_days is None:
+
+        norm = get_parameter_norm(parameter)
+
+    else:
+
+        norm = get_period_norm(
+            parameter,
+            number_of_days
+        )
 
     if parameter == "TXK":
+
         ticks = list(range(-20, 51, 5))
         title = "Höchsttemperatur in °C"
-    else:
+
+    elif parameter == "TNK":
+
         ticks = list(range(-30, 31, 5))
         title = "Tiefsttemperatur in °C"
 
+    elif parameter == "TTT":
+
+        ticks = list(range(-20, 36, 5))
+        title = "Tagesmitteltemperatur in °C"
+
+    elif parameter == "SunD1":
+
+        if number_of_days is None:
+
+            ticks = list(range(0, 17, 2))
+            title = "Sonnenscheindauer in Stunden"
+
+        else:
+
+            ticks = list(
+                range(
+                    0,
+                    16 * number_of_days + 1,
+                    2 * number_of_days
+                )
+            )
+
+            title = (
+                f"Sonnenscheindauer in Stunden "
+                f"({number_of_days} Tage)"
+            )
+
+    elif parameter == "RR1c":
+
+        if number_of_days is None:
+
+            ticks = list(range(0, 51, 5))
+            title = "Niederschlagsmenge in mm"
+
+        else:
+
+            maximum = norm.vmax
+
+            step = get_legend_step(maximum)
+
+            ticks = list(
+                range(
+                    0,
+                    int(maximum) + 1,
+                    step
+                )
+            )
+
+            title = (
+                f"Niederschlagsmenge in mm "
+                f"({number_of_days} Tage)"
+            )
+
+    elif parameter == "FX1":
+
+        ticks = list(range(13))
+        title = "Windböe in km/h"
+
+    else:
+
+        return
+
+    # --------------------------------------------------------
+    # ACHSE VORBEREITEN
+    # --------------------------------------------------------
+
     ax.clear()
+
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
+
     ax.axis("off")
+
+    # --------------------------------------------------------
+    # TITEL
+    # --------------------------------------------------------
 
     ax.text(
         0.5,
@@ -1094,24 +1506,148 @@ def draw_parameter_legend(
         color="#333333"
     )
 
-    gradient_array = [[
-        cmap(
-            norm(
-                norm.vmin
-                + (norm.vmax - norm.vmin) * i / 255
-            )
-        )
-        for i in range(256)
-    ]]
+    # --------------------------------------------------------
+    # FARBVERLAUF
+    # --------------------------------------------------------
 
-    ax.imshow(
-        gradient_array,
-        extent=[0.08, 0.92, 0.48, 0.72],
-        aspect="auto",
-        interpolation="nearest"
+    from matplotlib.colors import (
+        ListedColormap,
+        BoundaryNorm
     )
 
+    if parameter == "FX1":
+
+        boundaries = [
+            0, 1, 5, 11, 19, 28, 38,
+            49, 61, 74, 88, 102, 117, 140
+        ]
+
+        bft_colors = []
+
+        for i in range(13):
+
+            if i == 0:
+                midpoint = 0.5
+
+            elif i == 12:
+                midpoint = 128.5
+
+            else:
+                midpoint = (
+                    boundaries[i]
+                    + boundaries[i + 1]
+                ) / 2
+
+            bft_colors.append(
+                cmap(
+                    get_parameter_norm(parameter)(
+                        midpoint
+                    )
+                )
+            )
+
+        legend_cmap = ListedColormap(
+            bft_colors
+        )
+
+        ax.imshow(
+            [list(range(13))],
+            extent=[0.08, 0.92, 0.48, 0.72],
+            aspect="auto",
+            cmap=legend_cmap,
+            norm=BoundaryNorm(
+                range(14),
+                legend_cmap.N
+            ),
+            interpolation="nearest"
+        )
+
+        labels = [
+            "<1",
+            "1–5",
+            "6–11",
+            "12–19",
+            "20–28",
+            "29–38",
+            "39–49",
+            "50–61",
+            "62–74",
+            "75–88",
+            "89–102",
+            "103–117",
+            ">117"
+        ]
+
+        for i, label in enumerate(labels):
+
+            x = 0.08 + (
+                (i + 0.5) / 13
+            ) * 0.84
+
+            ax.text(
+                x,
+                0.34,
+                str(i),
+                transform=ax.transAxes,
+                ha="center",
+                va="center",
+                fontsize=9.5,
+                fontweight="bold",
+                color="#333333"
+            )
+
+            ax.text(
+                x,
+                0.19,
+                label,
+                transform=ax.transAxes,
+                ha="center",
+                va="center",
+                fontsize=10,
+                color="#333333"
+            )
+
+        ax.text(
+            0.5,
+            0.07,
+            "Beaufort",
+            transform=ax.transAxes,
+            ha="center",
+            fontsize=9.5,
+            color="#555555"
+        )
+
+        return
+
+    else:
+
+        gradient_array = [
+            [
+                cmap(
+                    norm(
+                        norm.vmin
+                        + (
+                            norm.vmax - norm.vmin
+                        ) * i / 255
+                    )
+                )
+                for i in range(256)
+            ]
+        ]
+
+        ax.imshow(
+            gradient_array,
+            extent=[0.08, 0.92, 0.48, 0.72],
+            aspect="auto",
+            interpolation="nearest"
+        )
+
+    # --------------------------------------------------------
+    # ZAHLENMARKIERUNGEN
+    # --------------------------------------------------------
+
     for value in ticks:
+
         x = 0.08 + (
             (value - norm.vmin)
             / (norm.vmax - norm.vmin)
@@ -1138,6 +1674,8 @@ def draw_parameter_legend(
             fontsize=10.5,
             color="#333333"
         )
+
+
 
 
 # ============================================================
@@ -1577,11 +2115,14 @@ def plot_map(
         f"      Erstelle {output_file} ..."
     )
 
-    column = (
-        "txk"
-        if parameter == "TXK"
-        else "tnk"
-    )
+    column = {
+        "TXK": "txk",
+        "TNK": "tnk",
+        "TTT": "TTT",
+        "SunD1": "SunD1",
+        "RR1c": "RR1c",
+        "FX1": "FX1"
+    }[parameter]
 
     cmap = get_parameter_cmap(parameter)
     norm = get_parameter_norm(parameter)
@@ -1916,6 +2457,98 @@ def main():
         )
 
     # ========================================================
+    # 7b. WEITERE MESSPARAMETER
+    # ========================================================
+
+    for parameter in ("TTT", "SunD1", "RR1c", "FX1"):
+
+        log("")
+        log("-" * 60)
+        log(f"Verarbeite zusätzlichen Parameter: {parameter}")
+
+        parameter_files = get_parameter_now_files(
+            parameter,
+            station_list["station_id"]
+        )
+
+        missing_meta = set(
+            station_list["station_id"]
+        ) - set(station_meta)
+
+        if missing_meta:
+            station_meta.update(
+                load_station_meta(missing_meta)
+            )
+
+        parameter_results, parameter_data_until = process_parameter_all(
+            parameter,
+            parameter_files,
+            target_date
+        )
+
+        values_by_station = {
+            result["station_id"]: result["value"]
+            for result in parameter_results
+        }
+
+        parameter_gdf = station_list.copy()
+        parameter_gdf[parameter] = parameter_gdf["station_id"].map(
+            values_by_station
+        )
+        parameter_gdf["lat"] = parameter_gdf["station_id"].map(
+            lambda station_id: station_meta.get(station_id, {}).get("lat")
+        )
+        parameter_gdf["lon"] = parameter_gdf["station_id"].map(
+            lambda station_id: station_meta.get(station_id, {}).get("lon")
+        )
+        parameter_gdf = parameter_gdf.dropna(
+            subset=[parameter, "lat", "lon"]
+        ).copy()
+
+        if parameter_gdf.empty:
+            raise RuntimeError(
+                f"Keine Stationen mit Messwerten und Geodaten für {parameter} vorhanden."
+            )
+
+        parameter_gdf = gpd.GeoDataFrame(
+            parameter_gdf,
+            geometry=gpd.points_from_xy(
+                parameter_gdf["lon"],
+                parameter_gdf["lat"]
+            ),
+            crs="EPSG:4326"
+        )
+
+        state_df = calculate_state_extremes(
+            parameter_gdf,
+            parameter
+        )
+
+        germany_extremes = calculate_germany_extremes(
+            parameter_gdf,
+            parameter
+        )
+
+        config = PARAMETER_DATASETS[parameter]
+        output_file = os.path.join(
+            OUTPUT_DIR,
+            f"extrema_{config['filename']}.png"
+        )
+
+        plot_map(
+            germany=germany,
+            gdf=parameter_gdf,
+            state_df=state_df,
+            germany_extremes=germany_extremes,
+            parameter=parameter,
+            target_date=target_date,
+            title=config["title"],
+            output_file=output_file,
+            created_at=created_at,
+            data_until=parameter_data_until
+        )
+
+    # ========================================================
     # 8. FERTIG
     # ========================================================
 
@@ -1951,6 +2584,13 @@ def main():
     log(
         f"TNK-Karte: {TNK_OUTPUT}"
     )
+
+    for parameter in ("TTT", "SunD1", "RR1c", "FX1"):
+        filename = PARAMETER_DATASETS[parameter]["filename"]
+        log(
+            f"{parameter}-Karte: "
+            + os.path.join(OUTPUT_DIR, f"extrema_{filename}.png")
+        )
 
     log("=" * 70)
 
